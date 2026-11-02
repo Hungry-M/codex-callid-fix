@@ -34,12 +34,12 @@ Codex 有时会把子线程的 app 工具委派（`create_thread` / `send_messag
 下载并运行：
 
 ```text
-CodexCallIdFix-Setup-1.0.0.exe
+CodexCallIdFix-Setup-0.1.0.exe
 ```
 
 安装到当前用户目录 `%LOCALAPPDATA%\Programs\CodexCallIdFix`，不需要管理员权限；安装包自带 Node 运行时、README、LICENSE、AUTHORS 和本地签名工具。安装后会运行自检，通过后自动删除安装包。
 
-不想安装时，可以解压 `CodexCallIdFix-1.0.0-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
+不想安装时，可以解压 `CodexCallIdFix-0.1.0-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
 
 安装完成后：
 
@@ -69,7 +69,7 @@ CodexCallIdFix-Setup-1.0.0.exe
 每次安装/升级都会在复制新文件前自动创建备份：
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v1.0.0\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v0.1.0\
   manifest.json
   codex\config.toml        （安装时存在才复制）
   codex\.env               （安装时存在才复制）
@@ -91,6 +91,14 @@ CodexCallIdFix-Setup-1.0.0.exe
 ## 在另一台电脑上测试
 
 当前这台构建机没有复现 `create_thread` / `send_message_to_thread` 的 bug。本机 Codex Desktop、Codex CLI、Windows、Node、Python 版本记录在 [`docs/environment.md`](docs/environment.md)。第二台电脑的测试步骤在 [`docs/reproduce.md`](docs/reproduce.md)；测试前先记录新机器的 Codex 版本，不要上传 `.codex` 的认证/状态文件或 API key。
+
+## 出站方式
+
+**修复代理出站**只在 **Codex 出口 = 修复代理**时生效，它决定修复代理怎么访问供应商：
+
+- `上游代理`：修复代理先连到配置的 HTTP 代理（`proxyHost:proxyPort`），发送 `CONNECT <供应商>:443`，再转发请求。供应商只能通过该代理访问时用这个。
+- `直连`：修复代理直接向供应商建立 TCP/TLS，绕过上游代理和 Windows 系统代理。
+- `自动回退`：先试上游代理（受 `autoProbeMs` 限制，默认 3 秒）；TCP/CONNECT 失败才改直连。如果上游代理连接成功、但供应商返回 HTTP 错误，不会自动改直连。
 
 ## 工作原理
 
@@ -280,7 +288,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-1.0.0.exe
+dist/CodexCallIdFix-Setup-0.1.0.exe
 dist/SHA256SUMS.txt
 ```
 
@@ -334,7 +342,7 @@ stop.cmd                 CLI 快捷方式（off）
 - **`EPERM ... config.toml...tmp`**：当前进程运行在受限令牌下（例如 Codex 的 Windows 沙箱），对 `~/.codex` 只有读权限。请从开始菜单或资源管理器启动 GUI，不要从 Codex 终端启动；`manage.js provider use` 同理。
 - **在 Codex 沙箱外运行**：从受限 Codex 终端写 `~/.codex` 可能被拒绝；用 GUI 或普通 PowerShell。
 - **安装器提示快捷方式/卸载注册表失败**：某些加固环境会拒绝未签名 EXE 写注册表或快捷方式。应用仍会安装并自检；用安装目录的 `uninstall.cmd` 卸载，桌面快捷方式没创建时用开始菜单快捷方式。
-- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-1.0.0-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
+- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-0.1.0-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
 - **“Could not create temporary directory”**：onefile 启动器现在解压到 EXE 旁边（`--runtime-tmpdir "."`）。请从可写目录运行（安装目录 / Downloads / 桌面），不要从 `Program Files` 或只读网络共享运行。开始菜单快捷方式已设置工作目录。
 - **SmartScreen 显示“未知发布者”**：发布二进制默认未签名；正式签名见上面的“作者与代码签名”，或在本机使用 `Trust & Sign`。
 - **Windows“应用和功能”里没有条目**：用安装目录的 `uninstall.cmd`；它也会先执行 `manage.js off` 和 `autostart off` 再删除文件。

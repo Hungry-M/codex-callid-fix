@@ -30,7 +30,7 @@ const net = require('net');
 const http = require('http');
 const { spawn, spawnSync } = require('child_process');
 
-const VERSION = '1.0.0';
+const VERSION = '0.1.0';
 const TOOL_DIR = __dirname;
 const DATA_DIR = path.resolve(process.env.CALLIDFIX_DATA_DIR || TOOL_DIR);
 const CONFIG_FILE = path.join(DATA_DIR, 'callidfix.config.json');

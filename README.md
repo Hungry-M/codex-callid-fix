@@ -45,7 +45,7 @@ ports are configuration values, not constants.
 Download and run:
 
 ```text
-CodexCallIdFix-Setup-1.0.0.exe
+CodexCallIdFix-Setup-0.1.0.exe
 ```
 
 The installer is per-user (`%LOCALAPPDATA%\Programs\CodexCallIdFix`), needs no
@@ -54,7 +54,7 @@ runs an installation self-check. If the check passes, the installer deletes
 itself.
 
 If you do not want an install, extract
-`CodexCallIdFix-1.0.0-portable.zip` and run `CodexCallIdFix.exe` inside it. The
+`CodexCallIdFix-0.1.0-portable.zip` and run `CodexCallIdFix.exe` inside it. The
 portable folder contains `backend/`, `runtime/node.exe`, the docs, and the
 signing helper. The bare `CodexCallIdFix.exe` alone is not a complete
 distribution: it needs a sibling/parent `backend/` and a Node runtime (bundled
@@ -94,7 +94,7 @@ The choices are saved in `backend/gui.json` (generated runtime file).
 Every installation/upgrade creates an automatic pre-install backup under:
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v1.0.0\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v0.1.0\
   manifest.json
   codex\config.toml        (if present at install time)
   codex\.env               (if present)
@@ -130,6 +130,21 @@ Python) are in [`docs/environment.md`](docs/environment.md). The second-machine
 checklist is in [`docs/reproduce.md`](docs/reproduce.md); record the new
 machine's Codex version before testing and do not attach `.codex` auth/state or
 API keys.
+
+## Egress modes
+
+**Fix proxy egress** only applies when **Codex route = Fix proxy**. It controls
+how the fix proxy reaches the provider:
+
+- `Upstream proxy` — the fix proxy connects to the configured HTTP proxy
+  (`proxyHost:proxyPort`), sends `CONNECT <provider>:443`, then forwards the
+  request. Use this when the provider is only reachable through that proxy.
+- `Direct` — the fix proxy opens a raw TCP/TLS connection to the provider and
+  bypasses the upstream proxy and Windows system proxy.
+- `Auto fallback` — try the upstream proxy first (bounded by `autoProbeMs`,
+  3 seconds by default); if the TCP/CONNECT step fails, retry directly. If the
+  upstream proxy accepts the connection but the provider returns an HTTP error,
+  it does **not** retry direct.
 
 ## How it works
 
@@ -323,8 +338,8 @@ Outputs:
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-1.0.0.exe
-dist/CodexCallIdFix-1.0.0-portable.zip
+dist/CodexCallIdFix-Setup-0.1.0.exe
+dist/CodexCallIdFix-0.1.0-portable.zip
 dist/SHA256SUMS.txt
 ```
 
@@ -459,7 +474,7 @@ Generated at runtime in `backend/`: `state.json`, `server.log`, `node-path.txt`,
   it, and use the Start Menu shortcut if the Desktop one was skipped.
 - **"backend/manage.js not found"** — a bare `CodexCallIdFix.exe` cannot run
   without the backend. Use the installer or extract
-  `CodexCallIdFix-1.0.0-portable.zip`; if running from a source checkout, keep
+  `CodexCallIdFix-0.1.0-portable.zip`; if running from a source checkout, keep
   `backend/` next to (or one level above) the EXE and provide Node via
   `runtime/node.exe` or `PATH`.
 - **"Could not create temporary directory"** — the onefile launcher extracts

@@ -56,8 +56,8 @@ jobs:
           name: CodexCallIdFix-windows
           path: |
             dist/CodexCallIdFix.exe
-            dist/CodexCallIdFix-Setup-1.0.0.exe
-            dist/CodexCallIdFix-1.0.0-portable.zip
+            dist/CodexCallIdFix-Setup-0.1.0.exe
+            dist/CodexCallIdFix-0.1.0-portable.zip
             dist/SHA256SUMS.txt
             README.md
             LICENSE
@@ -69,8 +69,8 @@ jobs:
         with:
           files: |
             dist/CodexCallIdFix.exe
-            dist/CodexCallIdFix-Setup-1.0.0.exe
-            dist/CodexCallIdFix-1.0.0-portable.zip
+            dist/CodexCallIdFix-Setup-0.1.0.exe
+            dist/CodexCallIdFix-0.1.0-portable.zip
             dist/SHA256SUMS.txt
             README.md
             LICENSE

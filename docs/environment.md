@@ -23,7 +23,7 @@ machine is needed for the reproduction test.
 | Windows | Windows 10 Home (Chinese), 10.0.19045, 64-bit |
 | Node.js | v24.13.0 |
 | Python | 3.10.0 |
-| Codex Call ID Fix | 1.0.0 |
+| Codex Call ID Fix | 0.1.0 |
 
 ## Notes
 

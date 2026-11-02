@@ -32,10 +32,14 @@ if (-not $signtool) {
     throw 'signtool.exe not found. Install the Windows SDK (Signing Tools) and re-run.'
 }
 
+$setup = Get-ChildItem (Join-Path $root 'dist\CodexCallIdFix-Setup-*.exe') -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+
 $files = @(
     (Join-Path $root 'dist\CodexCallIdFix.exe'),
-    (Join-Path $root 'dist\CodexCallIdFix-Setup-1.0.0.exe')
-) | Where-Object { Test-Path $_ }
+    if ($setup) { $setup.FullName }
+) | Where-Object { $_ -and (Test-Path $_) }
 
 if ($files.Count -eq 0) {
     throw 'No release EXEs found in dist\. Run packaging\build.ps1 first.'

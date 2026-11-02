@@ -15,7 +15,7 @@ bug. Use a second Windows machine for this test.
    The wildcard path may need the actual `bin\<hash>\codex.exe` path; copy the
    version into `environment.md` or a new file under `docs/`.
 
-2. Install `CodexCallIdFix-Setup-1.0.0.exe` (or extract the portable zip) and
+2. Install `CodexCallIdFix-Setup-0.1.0.exe` (or extract the portable zip) and
    launch **outside** Codex's sandbox (Start Menu / Explorer, not a Codex
    terminal).
 

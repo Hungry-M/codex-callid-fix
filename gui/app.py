@@ -42,7 +42,7 @@ except Exception:  # pragma: no cover - optional dependency
     sv_ttk = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "1.0.0"
+APP_VERSION = "0.1.0"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 CREATE_NEW_CONSOLE = 0x00000010 if os.name == "nt" else 0
 
@@ -135,6 +135,13 @@ STRINGS = {
         "egress_proxy": "上游代理",
         "egress_direct": "直连",
         "egress_auto": "自动回退",
+        "flow_note": "「Codex 出口」决定 Codex 是否经过本工具；「修复代理出站」只在走修复代理时生效，决定本工具怎么访问供应商。",
+        "flow_fix_proxy": "当前：Codex → 本机修复代理 → 上游代理 {host}:{port} → 供应商",
+        "flow_fix_direct": "当前：Codex → 本机修复代理 → 供应商（直连，不走上游代理）",
+        "flow_fix_auto": "当前：Codex → 本机修复代理 → 先试上游代理，连接失败后直连供应商",
+        "flow_upstream": "当前：修复代理关闭；Codex 直接使用上游代理 {host}:{port}。",
+        "flow_direct": "当前：修复代理关闭；Codex 直接访问供应商。",
+        "flow_openai": "当前为 OpenAI 内置供应商，流量不经过修复代理。",
         "settings_card": "端口与上游代理",
         "local_port": "本地监听端口",
         "auto": "自动",
@@ -241,6 +248,13 @@ STRINGS = {
         "egress_proxy": "上游代理",
         "egress_direct": "直連",
         "egress_auto": "自動退回",
+        "flow_note": "「Codex 出口」決定 Codex 是否經過本工具；「修復代理出站」只在走修復代理時生效，決定本工具如何連到供應商。",
+        "flow_fix_proxy": "目前：Codex → 本機修復代理 → 上游代理 {host}:{port} → 供應商",
+        "flow_fix_direct": "目前：Codex → 本機修復代理 → 供應商（直連，不經上游代理）",
+        "flow_fix_auto": "目前：Codex → 本機修復代理 → 先試上游代理，連線失敗後直連供應商",
+        "flow_upstream": "目前：修復代理關閉；Codex 直接使用上游代理 {host}:{port}。",
+        "flow_direct": "目前：修復代理關閉；Codex 直接連到供應商。",
+        "flow_openai": "目前為 OpenAI 內建供應商，流量不經過修復代理。",
         "settings_card": "連接埠與上游代理",
         "local_port": "本機監聽連接埠",
         "auto": "自動",
@@ -347,6 +361,13 @@ STRINGS = {
         "egress_proxy": "Upstream proxy",
         "egress_direct": "Direct",
         "egress_auto": "Auto fallback",
+        "flow_note": "Codex route controls whether Codex uses this tool. Fix proxy egress only applies when it does, and controls how the tool reaches the provider.",
+        "flow_fix_proxy": "Now: Codex → local fix proxy → upstream proxy {host}:{port} → provider",
+        "flow_fix_direct": "Now: Codex → local fix proxy → provider (direct, bypassing the upstream proxy)",
+        "flow_fix_auto": "Now: Codex → local fix proxy → try upstream proxy, fall back to direct",
+        "flow_upstream": "Now: fix proxy is off; Codex uses the upstream proxy {host}:{port} directly.",
+        "flow_direct": "Now: fix proxy is off; Codex connects to the provider directly.",
+        "flow_openai": "OpenAI (built-in) is active; its traffic does not use the fix proxy.",
         "settings_card": "Ports and upstream proxy",
         "local_port": "Local listen port",
         "auto": "Auto",
@@ -845,6 +866,15 @@ class App:
                 command=lambda v=value: self.on_egress_changed(v),
             ).grid(row=index, column=0, sticky="w", pady=(3, 0))
 
+        self.flow_hint = ttk.Label(
+            control_card,
+            text="",
+            style="Sub.TLabel",
+            wraplength=920,
+            justify="left",
+        )
+        self.flow_hint.grid(row=1, column=0, columnspan=3, sticky="w", pady=(8, 0))
+
         # Settings card -----------------------------------------------------
         settings_card = ttk.LabelFrame(
             root, text=self.t("settings_card"), style="Card.TLabelframe"
@@ -1255,6 +1285,7 @@ class App:
                 port=egress.get("proxyPort"),
             )
         self.route_label.configure(text=route_text)
+        self._update_flow_hint(route, mode, active, egress)
 
         self.toggle_button.configure(
             text=self.t("stop_proxy") if enabled else self.t("start_proxy"),
@@ -1326,6 +1357,24 @@ class App:
             self._run_sequence_async(self.t("action_stop_proxy"), [["off"]])
         else:
             self._run_sequence_async(self.t("action_start_proxy"), [["route", "fix"]])
+
+    def _update_flow_hint(self, route: str, mode: str, active, egress: dict) -> None:
+        host = egress.get("proxyHost") or "?"
+        port = egress.get("proxyPort") or "?"
+        if active is None:
+            detail = self.t("flow_openai")
+        elif route == "fix":
+            if mode == "direct":
+                detail = self.t("flow_fix_direct")
+            elif mode == "auto":
+                detail = self.t("flow_fix_auto")
+            else:
+                detail = self.t("flow_fix_proxy", host=host, port=port)
+        elif route == "upstream":
+            detail = self.t("flow_upstream", host=host, port=port)
+        else:
+            detail = self.t("flow_direct")
+        self.flow_hint.configure(text=f"{self.t('flow_note')}\n{detail}")
 
     def on_route_changed(self, route: str) -> None:
         if self.busy or not self.status:
