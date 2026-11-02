@@ -1,0 +1,25 @@
+# build output
+/build/
+/dist/
+/packaging/stage/
+*.spec
+
+# runtime state (generated next to backend/)
+backend/state.json
+backend/server.log
+backend/server.log.1
+backend/node-path.txt
+backend/gui.json
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# local test scratch
+/.tmptest/
+
+# installer / signing secrets
+*.pfx
+*.p12

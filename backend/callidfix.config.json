@@ -1,0 +1,17 @@
+{
+  "listenHost": "127.0.0.1",
+  "listenPort": 7891,
+  "providers": "all",
+  "fallbackOriginalBaseUrls": {},
+  "egress": {
+    "mode": "proxy",
+    "proxyHost": "127.0.0.1",
+    "proxyPort": 7890,
+    "connectTimeoutMs": 15000,
+    "autoProbeMs": 3000
+  },
+  "codexEnv": {
+    "manage": true,
+    "noProxy": "localhost,127.0.0.1,::1"
+  }
+}
