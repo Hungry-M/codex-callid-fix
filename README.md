@@ -436,6 +436,8 @@ The project is licensed under the **MIT License**; see [`LICENSE`](LICENSE).
 Bundled/third-party components have their own terms; see
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). Security reports should use
 GitHub private vulnerability reporting per [`SECURITY.md`](SECURITY.md).
+Contributions use DCO sign-off plus a lightweight inbound relicense grant; see
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Layout
 

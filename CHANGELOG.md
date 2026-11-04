@@ -8,6 +8,8 @@ change between 0.1.x releases.
 - Add automated tests for the synthetic `function_call_output` rewrite.
 - Add CI test step and public-release documentation
   (`SECURITY.md`, `CONTRIBUTING.md`, `THIRD_PARTY_NOTICES.md`).
+- Add DCO sign-off policy and pull-request check, plus a lightweight inbound
+  relicense grant for contributions.
 - Improve the menu button gap between label and chevron for all font sizes.
 - Clarify that the tool is an experimental compatibility shim: the original
   failure was not reproducible on the two available test machines.

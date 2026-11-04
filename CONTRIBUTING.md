@@ -51,6 +51,30 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
   - `packaging/version_gui.txt`, `packaging/version_installer.txt`
   - README/docs/workflow asset names
 
+## DCO and inbound license
+
+This project uses the [Developer Certificate of Origin 1.1](https://developercertificate.org/).
+Every commit in a pull request must carry a sign-off trailer:
+
+```text
+Signed-off-by: Your Name <you@example.com>
+```
+
+Use `git commit -s` (or add the trailer manually). CI checks this for pull
+requests. The sign-off certifies that you have the right to submit the
+contribution.
+
+By submitting a contribution, you also grant **Hungry-M** a perpetual,
+worldwide, non-exclusive, royalty-free, irrevocable license to reproduce,
+modify, distribute, and relicense your contribution, alone or as part of this
+project, under any OSI-approved license, including future versions of this
+project's license. You retain copyright in your contribution.
+
+This is a lightweight inbound license, not a copyright assignment and not a
+signed CLA. If you require a formal CLA before contributing, open an issue
+first. The maintainer may adopt a CLA before accepting contributions that need
+one.
+
 ## Reporting provider compatibility
 
 Open an issue with:
