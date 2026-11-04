@@ -720,7 +720,9 @@ class App:
         )
 
         self.menu_button = ttk.Menubutton(
-            header, text=self.t("menu"), style="Menu.TMenubutton"
+            header,
+            text=f"{self.t('menu')}\u2002",
+            style="Menu.TMenubutton",
         )
         self.menu_button.grid(row=0, column=1, rowspan=2, sticky="e")
         menu = tk.Menu(self.menu_button, tearoff=False)
