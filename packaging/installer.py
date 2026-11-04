@@ -13,7 +13,7 @@ The installer:
   * optionally deletes itself after a successful install
 
 Silent mode (used by the build tests):
-  CodexCallIdFix-Setup-0.1.0.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
+  CodexCallIdFix-Setup-0.1.1.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ except Exception:  # pragma: no cover - only on Windows
     winreg = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.1.1"
 AUTHOR = "Hungry-M"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexCallIdFix"
@@ -509,11 +509,14 @@ def verify_install(install_dir: Path) -> dict:
         gui,
         node,
         manage,
+        install_dir / "backend" / "rewrite.js",
         install_dir / "README.md",
         install_dir / "README.zh.md",
         install_dir / "README.zh-Hant.md",
         install_dir / "AUTHORS.md",
         install_dir / "LICENSE",
+        install_dir / "THIRD_PARTY_NOTICES.md",
+        install_dir / "SECURITY.md",
         install_dir / "trust-sign.ps1",
         install_dir / "trust-sign.cmd",
     ):

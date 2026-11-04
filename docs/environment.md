@@ -2,9 +2,10 @@
 
 Recorded: 2026-11-02 (Asia/Shanghai)
 
-This machine is the build/development host. The `create_thread` /
-`send_message_to_thread` bug has **not** been reproduced here yet; a second
-machine is needed for the reproduction test.
+This machine is the build/development host. The original failure has **not**
+been reproduced on either this host or the second test machine, and no captured
+request is available. Treat the rewrite as an experimental compatibility shim,
+not a confirmed fix.
 
 ## Codex
 
@@ -23,7 +24,7 @@ machine is needed for the reproduction test.
 | Windows | Windows 10 Home (Chinese), 10.0.19045, 64-bit |
 | Node.js | v24.13.0 |
 | Python | 3.10.0 |
-| Codex Call ID Fix | 0.1.0 |
+| Codex Call ID Fix | 0.1.1 |
 
 ## Notes
 

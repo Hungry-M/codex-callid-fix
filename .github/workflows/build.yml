@@ -32,6 +32,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pyinstaller sv-ttk
 
+      - name: Test rewrite logic
+        run: node --test
+
       - name: Build GUI and installer
         run: powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
 
@@ -56,8 +59,8 @@ jobs:
           name: CodexCallIdFix-windows
           path: |
             dist/CodexCallIdFix.exe
-            dist/CodexCallIdFix-Setup-0.1.0.exe
-            dist/CodexCallIdFix-0.1.0-portable.zip
+            dist/CodexCallIdFix-Setup-0.1.1.exe
+            dist/CodexCallIdFix-0.1.1-portable.zip
             dist/SHA256SUMS.txt
             README.md
             LICENSE
@@ -69,8 +72,8 @@ jobs:
         with:
           files: |
             dist/CodexCallIdFix.exe
-            dist/CodexCallIdFix-Setup-0.1.0.exe
-            dist/CodexCallIdFix-0.1.0-portable.zip
+            dist/CodexCallIdFix-Setup-0.1.1.exe
+            dist/CodexCallIdFix-0.1.1-portable.zip
             dist/SHA256SUMS.txt
             README.md
             LICENSE

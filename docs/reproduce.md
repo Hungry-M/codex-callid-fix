@@ -1,7 +1,9 @@
 # Reproducing the Codex `create_thread` bug
 
-The development host (see `environment.md`) does not currently reproduce the
-bug. Use a second Windows machine for this test.
+Neither the development host nor the second test machine reproduced the
+failure, and no captured request is available. Keep this checklist for a future
+observed case; do not assume the proxy fixes a case unless `backend/server.log`
+shows `rewrote=1` (or more).
 
 ## Before testing
 
@@ -15,7 +17,7 @@ bug. Use a second Windows machine for this test.
    The wildcard path may need the actual `bin\<hash>\codex.exe` path; copy the
    version into `environment.md` or a new file under `docs/`.
 
-2. Install `CodexCallIdFix-Setup-0.1.0.exe` (or extract the portable zip) and
+2. Install `CodexCallIdFix-Setup-0.1.1.exe` (or extract the portable zip) and
    launch **outside** Codex's sandbox (Start Menu / Explorer, not a Codex
    terminal).
 

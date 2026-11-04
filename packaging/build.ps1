@@ -4,7 +4,7 @@ Set-Location $root
 
 $python = (Get-Command python).Source
 $node = (Get-Command node).Source
-$version = '0.1.0'
+$version = '0.1.1'
 $stage = Join-Path $PSScriptRoot 'stage'
 $dist = Join-Path $root 'dist'
 
@@ -31,6 +31,7 @@ Write-Host '== stage payload =='
 New-Item -ItemType Directory -Force -Path (Join-Path $stage 'backend'), (Join-Path $stage 'runtime'), (Join-Path $stage 'assets') | Out-Null
 Copy-Item (Join-Path $root 'backend\manage.js') (Join-Path $stage 'backend\manage.js')
 Copy-Item (Join-Path $root 'backend\server.js') (Join-Path $stage 'backend\server.js')
+Copy-Item (Join-Path $root 'backend\rewrite.js') (Join-Path $stage 'backend\rewrite.js')
 Copy-Item (Join-Path $root 'backend\start-hidden.vbs') (Join-Path $stage 'backend\start-hidden.vbs')
 Copy-Item (Join-Path $root 'backend\callidfix.config.json') (Join-Path $stage 'backend\callidfix.config.json')
 Copy-Item (Join-Path $root 'README.md') (Join-Path $stage 'README.md')
@@ -38,6 +39,8 @@ Copy-Item (Join-Path $root 'README.zh.md') (Join-Path $stage 'README.zh.md')
 Copy-Item (Join-Path $root 'README.zh-Hant.md') (Join-Path $stage 'README.zh-Hant.md')
 Copy-Item (Join-Path $root 'AUTHORS.md') (Join-Path $stage 'AUTHORS.md')
 Copy-Item (Join-Path $root 'LICENSE') (Join-Path $stage 'LICENSE')
+Copy-Item (Join-Path $root 'THIRD_PARTY_NOTICES.md') (Join-Path $stage 'THIRD_PARTY_NOTICES.md')
+Copy-Item (Join-Path $root 'SECURITY.md') (Join-Path $stage 'SECURITY.md')
 Copy-Item (Join-Path $PSScriptRoot 'trust-sign.ps1') (Join-Path $stage 'trust-sign.ps1')
 Copy-Item (Join-Path $PSScriptRoot 'trust-sign.cmd') (Join-Path $stage 'trust-sign.cmd')
 Copy-Item (Join-Path $root 'assets\app.ico') (Join-Path $stage 'assets\app.ico')
