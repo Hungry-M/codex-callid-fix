@@ -460,6 +460,7 @@ assets/app.ico           application/installer icon
 AUTHORS.md               author metadata
 LICENSE                  MIT
 THIRD_PARTY_NOTICES.md   bundled dependency licenses
+third_party/             full third-party license texts
 SECURITY.md              vulnerability reporting
 CONTRIBUTING.md          development and test notes
 CHANGELOG.md             release history

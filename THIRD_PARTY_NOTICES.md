@@ -2,8 +2,8 @@
 
 This project is licensed under the MIT License (see `LICENSE`). Release
 artifacts bundle or depend on third-party software with their own licenses.
-This file is a summary, not legal advice; keep the full license texts with
-distributed binaries.
+This file is a summary, not legal advice. Full texts used by the release build
+are in `third_party/`; keep them with distributed binaries.
 
 ## Bundled runtime
 
@@ -37,3 +37,11 @@ Upstream license links:
 - Python: <https://docs.python.org/3/license.html>
 - Tcl/Tk: <https://www.tcl.tk/software/tcltk/license.html>
 - sv-ttk: <https://github.com/rdbende/Sun-Valley-ttk-theme/blob/main/LICENSE>
+
+Included files:
+
+- `third_party/Node-LICENSE.txt`
+- `third_party/PyInstaller-COPYING.txt`
+- `third_party/Python-LICENSE.txt`
+- `third_party/Tcl-Tk-license.terms`
+- `third_party/sv-ttk-LICENSE.txt`

@@ -315,7 +315,7 @@ GitHub Actions（`.github/workflows/build.yml`）會在 push 時建置，推送 
 
 ## 授權
 
-本專案使用 **MIT License**，見 [`LICENSE`](LICENSE)。安裝套件/可攜包內的第三方元件有各自授權，見 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。安全回報請依 [`SECURITY.md`](SECURITY.md) 使用 GitHub 私密漏洞回報。
+本專案使用 **MIT License**，見 [`LICENSE`](LICENSE)。安裝套件/可攜包內的第三方元件有各自授權，見 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)，完整文本在 `third_party/`。安全回報請依 [`SECURITY.md`](SECURITY.md) 使用 GitHub 私密漏洞回報。
 
 ## 目錄
 

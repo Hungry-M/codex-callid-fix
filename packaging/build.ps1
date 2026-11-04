@@ -41,6 +41,7 @@ Copy-Item (Join-Path $root 'AUTHORS.md') (Join-Path $stage 'AUTHORS.md')
 Copy-Item (Join-Path $root 'LICENSE') (Join-Path $stage 'LICENSE')
 Copy-Item (Join-Path $root 'THIRD_PARTY_NOTICES.md') (Join-Path $stage 'THIRD_PARTY_NOTICES.md')
 Copy-Item (Join-Path $root 'SECURITY.md') (Join-Path $stage 'SECURITY.md')
+Copy-Item (Join-Path $root 'third_party') (Join-Path $stage 'third_party') -Recurse
 Copy-Item (Join-Path $PSScriptRoot 'trust-sign.ps1') (Join-Path $stage 'trust-sign.ps1')
 Copy-Item (Join-Path $PSScriptRoot 'trust-sign.cmd') (Join-Path $stage 'trust-sign.cmd')
 Copy-Item (Join-Path $root 'assets\app.ico') (Join-Path $stage 'assets\app.ico')

@@ -516,6 +516,7 @@ def verify_install(install_dir: Path) -> dict:
         install_dir / "AUTHORS.md",
         install_dir / "LICENSE",
         install_dir / "THIRD_PARTY_NOTICES.md",
+        install_dir / "third_party" / "Node-LICENSE.txt",
         install_dir / "SECURITY.md",
         install_dir / "trust-sign.ps1",
         install_dir / "trust-sign.cmd",

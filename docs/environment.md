@@ -12,16 +12,16 @@ not a confirmed fix.
 | Component | Version / path |
 | --- | --- |
 | Codex Desktop (MSIX package) | `OpenAI.Codex` **26.1027.3384.0** (x64) |
-| Desktop executable | `%ProgramFiles%\WindowsApps\OpenAI.Codex_26.1027.3384.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe` |
+| Desktop executable | `%ProgramFiles%\WindowsApps\OpenAI.Codex_<version>_x64__<publisher>\app\ChatGPT.exe` |
 | Desktop file version | `156.0.8078.48` |
 | Codex CLI | `codex-cli 0.166.0-alpha.5.1` |
-| CLI path | `%LOCALAPPDATA%\OpenAI\Codex\bin\22cfb1d302613eae\codex.exe` |
+| CLI path | `%LOCALAPPDATA%\OpenAI\Codex\bin\<hash>\codex.exe` |
 
 ## Build host
 
 | Component | Version |
 | --- | --- |
-| Windows | Windows 10 Home (Chinese), 10.0.19045, 64-bit |
+| Windows | Windows 10 22H2 build 19045, 64-bit |
 | Node.js | v24.13.0 |
 | Python | 3.10.0 |
 | Codex Call ID Fix | 0.1.1 |
