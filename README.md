@@ -462,6 +462,7 @@ LICENSE                  MIT
 THIRD_PARTY_NOTICES.md   bundled dependency licenses
 third_party/             full third-party license texts
 SECURITY.md              vulnerability reporting
+CODE_OF_CONDUCT.md       community behavior
 CONTRIBUTING.md          development and test notes
 CHANGELOG.md             release history
 stop.cmd                 CLI shortcut for "off"
