@@ -13,7 +13,7 @@ The installer:
   * optionally deletes itself after a successful install
 
 Silent mode (used by the build tests):
-  CodexCallIdFix-Setup-0.1.1.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
+  CodexCallIdFix-Setup-0.1.2.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ except Exception:  # pragma: no cover - only on Windows
     winreg = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.1"
+APP_VERSION = "0.1.2"
 AUTHOR = "Hungry-M"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexCallIdFix"
@@ -351,6 +351,10 @@ if ($restoreCode -ne 0) {{
     $message = "Could not restore Codex config.toml/.env automatically.`nThe installation and backup were kept.`n`nFix the reported provider URL issue, then run uninstall.cmd again.`n`nBackup: " + $backupRoot
     [System.Windows.Forms.MessageBox]::Show($message, 'Codex Call ID Fix', 'OK', 'Warning') | Out-Null
     exit 1
+}}
+$trustSign = Join-Path $dir 'trust-sign.ps1'
+if (Test-Path $trustSign) {{
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $trustSign -RemoveCert | Out-Null
 }}
 & $node $manage autostart off | Out-Null
 reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v codex-callid-fix /f 2>$null | Out-Null

@@ -3,7 +3,20 @@
 All notable changes are documented here. This project is pre-1.0; behavior may
 change between 0.1.x releases.
 
-## 0.1.1 — unreleased (prepared)
+## 0.1.2 — unreleased (prepared)
+
+- Fix the local self-signing flow: wait for the exact GUI process, retry while
+  the EXE is locked, verify the signature is `Valid`, log to
+  `%LOCALAPPDATA%\CodexCallIdFix\trust-sign.log`, and relaunch even when signing
+  fails.
+- Use a reusable `CN=Hungry-M` local root CA with a project child certificate
+  (`CN=codex-callid-fix`); other projects can share the root.
+- Uninstall removes the project child, keeps the root while other project child
+  certificates remain, and removes the root only when unused.
+- Clarify that self-signing changes the local publisher/signature state but does
+  not guarantee SmartScreen reputation.
+
+## 0.1.1 — 2026-11-05
 
 - Add automated tests for the synthetic `function_call_output` rewrite.
 - Add CI test step and public-release documentation

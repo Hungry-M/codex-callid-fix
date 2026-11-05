@@ -42,7 +42,7 @@ except Exception:  # pragma: no cover - optional dependency
     sv_ttk = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.1"
+APP_VERSION = "0.1.2"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 CREATE_NEW_CONSOLE = 0x00000010 if os.name == "nt" else 0
 
@@ -70,7 +70,7 @@ STRINGS = {
         "menu": "菜单",
         "menu_settings": "设置…",
         "menu_trust_sign": "本地信任并签名…",
-        "trust_sign_confirm": "这会创建一个自签名证书，加入当前用户的受信任根和受信任发布者，并给已安装的 EXE 签名。\n只对本机当前 Windows 账户有效；不会让其他电脑信任它。\n\n签名时应用会关闭，完成后自动重新打开。继续吗？",
+        "trust_sign_confirm": "这会创建/复用一个本地根证书（CN=Hungry-M），为 codex-callid-fix 签发子证书，加入当前用户的受信任根/受信任发布者，并给 EXE 签名。\n只对本机当前 Windows 账户有效；不会让其他电脑信任它。\n\n签名时应用会关闭，完成后会自动重新打开；签名失败也会重新打开，并写入 %LOCALAPPDATA%\\CodexCallIdFix\\trust-sign.log。继续吗？",
         "trust_sign_unavailable": "只有安装版的 CodexCallIdFix.exe 支持本地签名；源码运行模式不适用。",
         "trust_sign_missing": "找不到 trust-sign.ps1：{path}",
         "trust_sign_failed": "无法启动签名工具：{error}",
@@ -183,7 +183,7 @@ STRINGS = {
         "menu": "選單",
         "menu_settings": "設定…",
         "menu_trust_sign": "本機信任並簽名…",
-        "trust_sign_confirm": "這會建立自簽憑證，加入目前使用者的受信任根與受信任發行者，並替已安裝的 EXE 簽名。\n只對本機目前 Windows 帳戶有效；不會讓其他電腦信任它。\n\n簽名時應用程式會關閉，完成後自動重新開啟。要繼續嗎？",
+        "trust_sign_confirm": "這會建立/重用一個本機根憑證（CN=Hungry-M），替 codex-callid-fix 簽發子憑證，加入目前使用者的受信任根/受信任發行者，並替 EXE 簽名。\n只對本機目前 Windows 帳戶有效；不會讓其他電腦信任它。\n\n簽名時應用程式會關閉，完成後會自動重新開啟；簽名失敗也會重新開啟，並寫入 %LOCALAPPDATA%\\CodexCallIdFix\\trust-sign.log。要繼續嗎？",
         "trust_sign_unavailable": "只有安裝版的 CodexCallIdFix.exe 支援本機簽名；原始碼執行模式不適用。",
         "trust_sign_missing": "找不到 trust-sign.ps1：{path}",
         "trust_sign_failed": "無法啟動簽名工具：{error}",
@@ -296,7 +296,7 @@ STRINGS = {
         "menu": "Menu",
         "menu_settings": "Settings…",
         "menu_trust_sign": "Trust & sign locally…",
-        "trust_sign_confirm": "This creates a self-signed certificate, adds it to the current user's Trusted Root and Trusted Publishers, and signs the installed EXE.\nIt is only trusted for this Windows account; other machines will not trust it.\n\nThe app will close, be signed, and reopen automatically. Continue?",
+        "trust_sign_confirm": "This creates or reuses a local root CA (CN=Hungry-M), issues a codex-callid-fix child certificate, trusts the root and publisher for the current user, and signs the EXE.\nIt is only trusted for this Windows account; other machines will not trust it.\n\nThe app will close and reopen after signing, even if signing fails; failures are written to %LOCALAPPDATA%\\CodexCallIdFix\\trust-sign.log. Continue?",
         "trust_sign_unavailable": "Local signing is only available for the installed CodexCallIdFix.exe, not source runs.",
         "trust_sign_missing": "trust-sign.ps1 not found: {path}",
         "trust_sign_failed": "Could not start the signing tool: {error}",
@@ -1527,6 +1527,8 @@ class App:
                     str(script),
                     "-AppPath",
                     sys.executable,
+                    "-WaitPid",
+                    str(os.getpid()),
                     "-Relaunch",
                 ],
                 cwd=str(self.base_dir),

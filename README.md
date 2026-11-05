@@ -18,7 +18,7 @@ It is intentionally provider-agnostic: any `[model_providers.*]` section in
 Codex's `config.toml` can be routed through it, and the listening/upstream proxy
 ports are configuration values, not constants.
 
-> **Status: experimental compatibility shim (0.1.1).** The original failure has
+> **Status: experimental compatibility shim (0.1.2).** The original failure has
 > not been reproduced on either available test machine, and no captured request
 > is available. Do not treat this as a confirmed Codex fix; validate with
 > `rewrote=` in `backend/server.log` for your provider/version.
@@ -52,7 +52,7 @@ ports are configuration values, not constants.
 Download and run:
 
 ```text
-CodexCallIdFix-Setup-0.1.1.exe
+CodexCallIdFix-Setup-0.1.2.exe
 ```
 
 The installer is per-user (`%LOCALAPPDATA%\Programs\CodexCallIdFix`), needs no
@@ -61,7 +61,7 @@ runs an installation self-check. If the check passes, the installer deletes
 itself.
 
 If you do not want an install, extract
-`CodexCallIdFix-0.1.1-portable.zip` and run `CodexCallIdFix.exe` inside it. The
+`CodexCallIdFix-0.1.2-portable.zip` and run `CodexCallIdFix.exe` inside it. The
 portable folder contains `backend/`, `runtime/node.exe`, the docs, and the
 signing helper. The bare `CodexCallIdFix.exe` alone is not a complete
 distribution: it needs a sibling/parent `backend/` and a Node runtime (bundled
@@ -101,7 +101,7 @@ The choices are saved in `backend/gui.json` (generated runtime file).
 Every installation/upgrade creates an automatic pre-install backup under:
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v0.1.1\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v0.1.2\
   manifest.json
   codex\config.toml        (if present at install time)
   codex\.env               (if present)
@@ -347,8 +347,8 @@ Outputs:
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.1.exe
-dist/CodexCallIdFix-0.1.1-portable.zip
+dist/CodexCallIdFix-Setup-0.1.2.exe
+dist/CodexCallIdFix-0.1.2-portable.zip
 dist/SHA256SUMS.txt
 ```
 
@@ -411,24 +411,33 @@ trust-sign.ps1
 After installation you can run **Start Menu → Trust & Sign Codex Call ID Fix**
 (or the GUI menu **Menu → Trust & sign locally…**). It:
 
-1. creates a self-signed code-signing certificate in `Cert:\CurrentUser\My`
-   (`CN=Hungry-M (Codex Call ID Fix)`);
-2. adds its public certificate to `CurrentUser\Root` and
-   `CurrentUser\TrustedPublisher`;
-3. waits for the GUI to close, signs `CodexCallIdFix.exe` with SHA-256, then
-   optionally relaunches it.
+1. creates (or reuses) a local root CA in `Cert:\CurrentUser\My`
+   (`CN=Hungry-M`) and trusts it in `CurrentUser\Root`;
+2. creates a project child certificate signed by that root
+   (`CN=codex-callid-fix`) and adds it to `CurrentUser\TrustedPublisher`;
+3. waits for the GUI to close, signs `CodexCallIdFix.exe` with the child using
+   SHA-256, then relaunches it (even if signing failed; failures are logged to
+   `%LOCALAPPDATA%\CodexCallIdFix\trust-sign.log`).
 
-This removes the local "unknown publisher" state and can satisfy local
-application-control policies. It **does not** make other computers trust the
-file, and SmartScreen reputation may still apply. Only use it on a machine you
+The root can be shared by other local projects; each project should get its own
+child certificate under the same root. `-RemoveCert` removes the project child
+first, then removes the root **only if no other child certificates issued by it
+remain**. The installer's uninstaller calls the same cleanup.
+
+This makes the file signed by a **locally trusted** publisher, so File
+Properties → Digital Signatures should show the signer. It **does not** make
+other computers trust the file, and SmartScreen reputation may still show a
+warning for a self-signed or downloaded file. Only use it on a machine you
 control. Remove the local certificate later with:
 
 ```powershell
 trust-sign.cmd -RemoveCert
 ```
 
-`-RemoveCert` uses `certutil -user -delstore` because PowerShell refuses to
-delete items from the current user's Root store directly.
+`-RemoveCert` removes the `CN=codex-callid-fix` child from `My` /
+`TrustedPublisher`, and removes the `CN=Hungry-M` root only when no other
+project child certificate remains. It uses `certutil -user -delstore` because
+PowerShell refuses to delete items from the current user's Root store directly.
 
 ## License
 
@@ -500,7 +509,7 @@ Generated at runtime in `backend/`: `state.json`, `server.log`, `node-path.txt`,
   it, and use the Start Menu shortcut if the Desktop one was skipped.
 - **"backend/manage.js not found"** — a bare `CodexCallIdFix.exe` cannot run
   without the backend. Use the installer or extract
-  `CodexCallIdFix-0.1.1-portable.zip`; if running from a source checkout, keep
+  `CodexCallIdFix-0.1.2-portable.zip`; if running from a source checkout, keep
   `backend/` next to (or one level above) the EXE and provide Node via
   `runtime/node.exe` or `PATH`.
 - **"Could not create temporary directory"** — the onefile launcher extracts

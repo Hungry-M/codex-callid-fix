@@ -12,7 +12,7 @@ Codex 有時會把子執行緒的 app 工具委派（`create_thread` / `send_mes
 
 工具不綁定特定廠商：`config.toml` 裡任何 `[model_providers.*]` 都可以接入；監聽連接埠和上游代理連接埠都是設定值，不是寫死的。
 
-> **狀態：0.1.1 實驗性相容 shim。** 原始故障在兩台可用測試機上都未重現，也沒有抓到請求樣本。不要把本專案當成已確認的 Codex 修復；請結合 `backend/server.log` 裡的 `rewrote=` 和你的供應商/版本驗證。
+> **狀態：0.1.2 實驗性相容 shim。** 原始故障在兩台可用測試機上都未重現，也沒有抓到請求樣本。不要把本專案當成已確認的 Codex 修復；請結合 `backend/server.log` 裡的 `rewrote=` 和你的供應商/版本驗證。
 >
 > 本專案是獨立專案，與 OpenAI 沒有隸屬或背書關係。
 
@@ -38,12 +38,12 @@ Codex 有時會把子執行緒的 app 工具委派（`create_thread` / `send_mes
 下載並執行：
 
 ```text
-CodexCallIdFix-Setup-0.1.1.exe
+CodexCallIdFix-Setup-0.1.2.exe
 ```
 
 安裝到目前使用者目錄 `%LOCALAPPDATA%\Programs\CodexCallIdFix`，不需要系統管理員權限；安裝套件自帶 Node 執行環境、README、LICENSE、AUTHORS 和本機簽名工具。安裝後會執行自檢，通過後自動刪除安裝套件。
 
-不想安裝時，可以解壓 `CodexCallIdFix-0.1.1-portable.zip`，執行裡面的 `CodexCallIdFix.exe`。可攜包包含 `backend/`、`runtime/node.exe`、文件、簽名工具。單獨一個 `CodexCallIdFix.exe` 不是完整發行包：它需要同級或上一級目錄有 `backend/`，並且有可用的 Node（可攜 `runtime/node.exe` 或 PATH 裡的 `node`）。
+不想安裝時，可以解壓 `CodexCallIdFix-0.1.2-portable.zip`，執行裡面的 `CodexCallIdFix.exe`。可攜包包含 `backend/`、`runtime/node.exe`、文件、簽名工具。單獨一個 `CodexCallIdFix.exe` 不是完整發行包：它需要同級或上一級目錄有 `backend/`，並且有可用的 Node（可攜 `runtime/node.exe` 或 PATH 裡的 `node`）。
 
 安裝完成後：
 
@@ -73,7 +73,7 @@ CodexCallIdFix-Setup-0.1.1.exe
 每次安裝/升級都會在複製新檔案前自動建立備份：
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<時間戳>-v0.1.1\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<時間戳>-v0.1.2\
   manifest.json
   codex\config.toml        （安裝時存在才複製）
   codex\.env               （安裝時存在才複製）
@@ -292,7 +292,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.1.exe
+dist/CodexCallIdFix-Setup-0.1.2.exe
 dist/SHA256SUMS.txt
 ```
 
@@ -350,7 +350,7 @@ stop.cmd                 CLI 捷徑（off）
 - **`EPERM ... config.toml...tmp`**：目前程序執行在受限權杖下（例如 Codex 的 Windows 沙箱），對 `~/.codex` 只有讀取權限。請從開始選單或檔案總管啟動 GUI，不要從 Codex 終端啟動；`manage.js provider use` 同理。
 - **在 Codex 沙箱外執行**：從受限 Codex 終端寫 `~/.codex` 可能被拒絕；用 GUI 或一般 PowerShell。
 - **安裝器提示捷徑/解除安裝登錄檔失敗**：某些加固環境會拒絕未簽章 EXE 寫登錄檔或捷徑。應用程式仍會安裝並自檢；用安裝目錄的 `uninstall.cmd` 解除安裝，桌面捷徑沒建立時用開始選單捷徑。
-- **“backend/manage.js not found”**：單獨一個 `CodexCallIdFix.exe` 沒有後端。請用安裝套件，或解壓 `CodexCallIdFix-0.1.1-portable.zip`；從原始碼目錄執行時，把 `backend/` 放在 EXE 同級或上一級，並提供 `runtime/node.exe` 或 PATH 中的 Node。
+- **“backend/manage.js not found”**：單獨一個 `CodexCallIdFix.exe` 沒有後端。請用安裝套件，或解壓 `CodexCallIdFix-0.1.2-portable.zip`；從原始碼目錄執行時，把 `backend/` 放在 EXE 同級或上一級，並提供 `runtime/node.exe` 或 PATH 中的 Node。
 - **“Could not create temporary directory”**：onefile 啟動器現在解壓到 EXE 旁邊（`--runtime-tmpdir "."`）。請從可寫目錄執行（安裝目錄 / Downloads / 桌面），不要從 `Program Files` 或唯讀網路共用執行。開始選單捷徑已設定工作目錄。
 - **SmartScreen 顯示「未知發行者」**：發佈的二進位檔預設未簽章；正式簽章見上面的「作者與程式碼簽章」，或在本機使用 `Trust & Sign`。
 - **Windows「應用程式與功能」裡沒有項目**：用安裝目錄的 `uninstall.cmd`；它也會先執行 `manage.js off` 和 `autostart off` 再刪除檔案。
