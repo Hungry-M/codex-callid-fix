@@ -424,6 +424,11 @@ child certificate under the same root. `-RemoveCert` removes the project child
 first, then removes the root **only if no other child certificates issued by it
 remain**. The installer's uninstaller calls the same cleanup.
 
+Root sharing is **local-only**. Installing app A does not make a separately
+downloaded app B trusted on another user's machine; A's installer would have to
+explicitly add the root to the user's Root store, which this project does not do
+and does not recommend. Use a CA-issued certificate for public distribution.
+
 This makes the file signed by a **locally trusted** publisher, so File
 Properties → Digital Signatures should show the signer. It **does not** make
 other computers trust the file, and SmartScreen reputation may still show a
