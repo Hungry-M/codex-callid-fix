@@ -522,6 +522,12 @@ Generated at runtime in `backend/`: `state.json`, `server.log`, `node-path.txt`,
   (install folder / Downloads / Desktop), not from a read-only location such as
   `Program Files` or a read-only network share. Start Menu shortcuts already set
   the install folder as the working directory.
+- **`NTE_PERM` / `0x80090010` when self-signing** — the app is running under
+  Codex's sandbox token, which has read-only access to
+  `%APPDATA%\Microsoft\Crypto\Keys`; Windows cannot create the certificate
+  private key. Launch the installed app from the Start Menu or Explorer, not
+  from a Codex/DSH terminal, then retry. Do not grant the sandbox group write
+  access to the crypto store.
 - **SmartScreen says "Unknown publisher"** — the release binaries are unsigned
   unless you sign them. See "Author and code signing" above, or use the local
   `Trust & Sign` helper for this machine.
