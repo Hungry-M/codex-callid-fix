@@ -1,0 +1,84 @@
+name: verify
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller sv-ttk
+
+      - name: Test rewrite logic
+        run: node --test
+
+      - name: Build setup and portable
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
+
+      - name: Install, verify, and cleanup on a clean runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = Join-Path $env:RUNNER_TEMP 'callidfix-smoke'
+          $codex = Join-Path $base 'codex'
+          $app = Join-Path $base 'app'
+          $result = Join-Path $base 'install-result.json'
+          Remove-Item $base -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $codex | Out-Null
+          @'
+          model = "fixture"
+          [model_providers.Mock]
+          base_url = "http://127.0.0.1:18099/v1"
+          '@ | Set-Content -Path (Join-Path $codex 'config.toml') -Encoding UTF8
+          $env:CODEX_HOME = $codex
+          $env:CALLIDFIX_BACKUP_ROOT = Join-Path $base 'backups'
+
+          $setup = Get-ChildItem dist\CodexCallIdFix-Setup-*.exe |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $setup) { throw 'setup not found' }
+
+          $proc = Start-Process -FilePath $setup.FullName -Wait -PassThru -ArgumentList @(
+            '--silent', '--dir', $app, '--no-shortcuts', '--no-registry',
+            '--no-launch', '--keep-installer', '--result-file', $result
+          )
+          if ($proc.ExitCode -ne 0) { throw "setup exit $($proc.ExitCode)" }
+          if (-not (Test-Path $result)) { throw 'install result missing' }
+          $json = Get-Content $result -Raw | ConvertFrom-Json
+          if (-not $json.ok) { throw "install failed: $($json.error)" }
+          if (-not (Test-Path (Join-Path $app 'CodexCallIdFix.exe'))) { throw 'installed exe missing' }
+          if (-not (Test-Path (Join-Path $app 'cleanup.ps1'))) { throw 'cleanup missing' }
+          if (Get-ChildItem $app -Directory -Filter '_MEI*' -ErrorAction SilentlyContinue) {
+            throw '_MEI directory left next to installed exe'
+          }
+
+          & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $app 'cleanup.ps1') -Yes -KeepBackups -RemoveFolder
+          if ($LASTEXITCODE -ne 0) { throw "cleanup exit $LASTEXITCODE" }
+          Start-Sleep -Seconds 6
+          if (Test-Path $app) { throw 'cleanup did not remove app dir' }
+
+          $portable = Join-Path $base 'portable'
+          Expand-Archive -Path (Get-ChildItem dist\*-portable.zip | Select-Object -First 1).FullName -DestinationPath $portable -Force
+          if (-not (Test-Path (Join-Path $portable 'cleanup.ps1'))) { throw 'portable cleanup missing' }
+          & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $portable 'cleanup.ps1') -Yes -KeepBackups
+          if ($LASTEXITCODE -ne 0) { throw "portable cleanup exit $LASTEXITCODE" }
+
+          Write-Output 'SMOKE_OK'
