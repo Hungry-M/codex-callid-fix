@@ -42,7 +42,7 @@ except Exception:  # pragma: no cover - optional dependency
     sv_ttk = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.3"
+APP_VERSION = "0.1.4"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 CREATE_NEW_CONSOLE = 0x00000010 if os.name == "nt" else 0
 
@@ -850,23 +850,25 @@ class App:
 
         egress_frame = ttk.Frame(control_card)
         egress_frame.grid(row=0, column=2, sticky="nw")
-        ttk.Label(egress_frame, text=self.t("fix_egress")).grid(
-            row=0, column=0, sticky="w"
-        )
+        self.egress_label = ttk.Label(egress_frame, text=self.t("fix_egress"))
+        self.egress_label.grid(row=0, column=0, sticky="w")
         self.egress_var = tk.StringVar(value="proxy")
+        self.egress_buttons = []
         egress_values = [
             ("proxy", self.t("egress_proxy")),
             ("direct", self.t("egress_direct")),
             ("auto", self.t("egress_auto")),
         ]
         for index, (value, text) in enumerate(egress_values, start=1):
-            ttk.Radiobutton(
+            button = ttk.Radiobutton(
                 egress_frame,
                 text=text,
                 value=value,
                 variable=self.egress_var,
                 command=lambda v=value: self.on_egress_changed(v),
-            ).grid(row=index, column=0, sticky="w", pady=(3, 0))
+            )
+            button.grid(row=index, column=0, sticky="w", pady=(3, 0))
+            self.egress_buttons.append(button)
 
         self.flow_hint = ttk.Label(
             control_card,
@@ -972,6 +974,7 @@ class App:
             self.autostart_check,
             self.route_var,
             self.egress_var,
+            *self.egress_buttons,
             self.listen_port_entry,
             self.auto_port_button,
             self.proxy_host_entry,
@@ -980,6 +983,7 @@ class App:
             self.refresh_button,
             self.menu_button,
         ]
+        self._update_egress_controls(self.route_var.get())
         self._log(f"{APP_NAME} {APP_VERSION}")
         self._log(f"backend: {self.backend_dir}")
         self._log(f"node   : {self.node or '(not found)'}")
@@ -1054,6 +1058,7 @@ class App:
                 pass
         if not busy:
             self.provider_combo.configure(state="readonly")
+            self._update_egress_controls(self.route_var.get())
         self.root.configure(cursor="watch" if busy else "")
 
     def _run_manage(self, args: list[str], timeout: int = 120) -> tuple[int, str, str]:
@@ -1272,6 +1277,7 @@ class App:
             route = "upstream"
         self.route_var.set(route)
         self.egress_var.set(mode if mode in {"proxy", "direct", "auto"} else "proxy")
+        self._update_egress_controls(route)
         if enabled:
             route_text = self.t(
                 "route_fix", port=listen.get("port"), egress=mode_label
@@ -1360,6 +1366,19 @@ class App:
         else:
             self._run_sequence_async(self.t("action_start_proxy"), [["route", "fix"]])
 
+    def _update_egress_controls(self, route: str) -> None:
+        enabled = route == "fix"
+        color = self.palette.text if enabled else self.palette.muted
+        try:
+            self.egress_label.configure(foreground=color)
+        except tk.TclError:
+            pass
+        for button in self.egress_buttons:
+            try:
+                button.configure(state="normal" if enabled else "disabled")
+            except tk.TclError:
+                pass
+
     def _update_flow_hint(self, route: str, mode: str, active, egress: dict) -> None:
         host = egress.get("proxyHost") or "?"
         port = egress.get("proxyPort") or "?"
@@ -1381,6 +1400,7 @@ class App:
     def on_route_changed(self, route: str) -> None:
         if self.busy or not self.status:
             return
+        self._update_egress_controls(route)
         current = "direct"
         if self.status.get("state", {}).get("enabled"):
             current = "fix"

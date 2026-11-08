@@ -99,10 +99,30 @@ function Remove-ProjectCertificate {
     exit 0
 }
 
+function Clear-PyInstallerEnvironment {
+    # The GUI is a PyInstaller onefile process and exports _MEIPASS2 for its
+    # children. If the relaunched EXE inherits that stale _MEI path, the
+    # bootloader tries to reuse an extraction directory that is already gone:
+    # "Failed to load Python DLL ...\_MEI...\python310.dll".
+    foreach ($name in @(
+        '_MEIPASS', '_MEIPASS2',
+        '_PYI_APPLICATION_HOME_DIR', '_PYI_ARCHIVE_FILE',
+        '_PYI_PARENT_PROCESS_LEVEL', '_PYI_SPLASH_IPC'
+    )) {
+        Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+    }
+    Get-ChildItem Env: -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like 'PYINSTALLER_*' } |
+        ForEach-Object { Remove-Item "Env:$($_.Name)" -ErrorAction SilentlyContinue }
+}
+
 function Start-AppIfRequested {
     if (-not $script:Relaunch) { return }
     $path = $script:AppPath
     if (-not $path -or -not (Test-Path -LiteralPath $path)) { return }
+    Write-Step 'Clearing PyInstaller bootstrap environment before relaunch...'
+    Clear-PyInstallerEnvironment
+    Start-Sleep -Milliseconds 700
     Write-Step 'Relaunching the application...'
     try {
         Start-Process -FilePath $path -WorkingDirectory (Split-Path -Parent $path)

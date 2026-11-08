@@ -3,6 +3,7 @@ param(
     [switch]$Yes,
     [switch]$KeepBackups,
     [switch]$RemoveFolder,
+    [switch]$RemoveRoot,
     [switch]$Pause
 )
 
@@ -60,6 +61,9 @@ try {
     Write-Host '  - restore tool-managed Codex config and turn autostart off'
     Write-Host '  - remove the codex-callid-fix child certificate'
     Write-Host '  - remove the Hungry-M root only if no other project child remains'
+    if ($RemoveRoot) {
+        Write-Host '  - REMOVE ROOT: remove Hungry-M root and ALL its child certificates' -ForegroundColor Yellow
+    }
     Write-Host '  - remove the Run entry and matching uninstall entry'
     Write-Host '  - remove shortcuts whose target is this AppDir'
     Write-Host '  - remove logs and, unless -KeepBackups, this tool''s backups'
@@ -89,6 +93,31 @@ try {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $trust -RemoveCert | Out-Host
     } else {
         Write-Warning 'trust-sign.ps1 not found; skipping certificate cleanup.'
+    }
+
+    if ($RemoveRoot) {
+        Write-Step 'Removing Hungry-M root and all certificates issued by it...'
+        $rootSubject = 'CN=Hungry-M'
+        $targets = @()
+        foreach ($store in @('My', 'TrustedPublisher')) {
+            $targets += Get-ChildItem "Cert:\CurrentUser\$store" -ErrorAction SilentlyContinue |
+                Where-Object { $_.Issuer -eq $rootSubject -and $_.Subject -ne $rootSubject }
+        }
+        $targets = $targets | Sort-Object Thumbprint -Unique
+        foreach ($cert in $targets) {
+            foreach ($store in @('My', 'TrustedPublisher')) {
+                certutil -user -delstore $store $cert.Thumbprint 2>$null | Out-Null
+            }
+            Write-Host "Removed child $($cert.Subject) $($cert.Thumbprint)"
+        }
+        foreach ($store in @('My', 'Root', 'TrustedPublisher')) {
+            Get-ChildItem "Cert:\CurrentUser\$store" -ErrorAction SilentlyContinue |
+                Where-Object { $_.Subject -eq $rootSubject } |
+                ForEach-Object {
+                    certutil -user -delstore $store $_.Thumbprint 2>$null | Out-Null
+                    Write-Host "Removed root $store $($_.Thumbprint)"
+                }
+        }
     }
 
     Write-Step 'Removing matching Run entry...'

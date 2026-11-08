@@ -28,9 +28,10 @@ const os = require('os');
 const path = require('path');
 const net = require('net');
 const http = require('http');
+const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 
-const VERSION = '0.1.3';
+const VERSION = '0.1.4';
 const TOOL_DIR = __dirname;
 const DATA_DIR = path.resolve(process.env.CALLIDFIX_DATA_DIR || TOOL_DIR);
 const CONFIG_FILE = path.join(DATA_DIR, 'callidfix.config.json');
@@ -44,6 +45,8 @@ const CODEX_HOME = path.resolve(
   expandHome(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'))
 );
 const CODEX_CONFIG = path.join(CODEX_HOME, 'config.toml');
+const CODEX_CONFIG_BACKUP = path.join(CODEX_HOME, 'config.toml.callidfix-backup');
+const CODEX_CONFIG_BACKUP_META = path.join(CODEX_HOME, 'config.toml.callidfix-backup.json');
 const CODEX_ENV = path.join(CODEX_HOME, '.env');
 const CODEX_ENV_PARKED = path.join(CODEX_HOME, '.env.callidfix-parked');
 const CODEX_ENV_BACKUP = path.join(CODEX_HOME, '.env.callidfix-backup');
@@ -223,6 +226,95 @@ function listProviderSections(text) {
   return found;
 }
 
+const PROFILE_HEADER_RE =
+  /^\s*\[\s*profiles\s*\.\s*(?:"((?:[^"\\]|\\.)*)"|'([^']*)'|([A-Za-z0-9_-]+))\s*\]\s*(?:#.*)?$/;
+
+function listProfiles(text) {
+  const lines = text.split(/\r?\n/);
+  const found = [];
+  let current = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*\[/.test(line)) {
+      const m = line.match(PROFILE_HEADER_RE);
+      current = m
+        ? {
+            id:
+              m[1] !== undefined
+                ? tomlUnescapeBasic(m[1])
+                : m[2] !== undefined
+                  ? m[2]
+                  : m[3],
+            headerIndex: i,
+            modelProvider: null,
+          }
+        : null;
+      if (current) found.push(current);
+      continue;
+    }
+    if (!current) continue;
+    const mp = line.match(
+      /^\s*model_provider\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*')\s*(?:#.*)?$/
+    );
+    if (mp) {
+      const raw = mp[1];
+      current.modelProvider =
+        raw.startsWith('"') && raw.endsWith('"')
+          ? tomlUnescapeBasic(raw.slice(1, -1))
+          : raw.slice(1, -1);
+    }
+  }
+  return found;
+}
+
+function matchingProfiles(text, targetId) {
+  const wanted = targetId === null ? 'openai' : targetId;
+  const profiles = listProfiles(text);
+  const byProvider = profiles.filter((p) => p.modelProvider === wanted);
+  if (byProvider.length) return byProvider;
+  // A profile named after the provider is a useful convention, but only when
+  // it does not explicitly point somewhere else.
+  return profiles.filter(
+    (p) => p.id === wanted && (!p.modelProvider || p.modelProvider === wanted)
+  );
+}
+
+function readProfileString(text, profileId, key) {
+  const lines = text.split(/\r?\n/);
+  let inProfile = false;
+  const header = new RegExp(
+    `^\\s*\\[\\s*profiles\\s*\\.\\s*(?:"((?:[^"\\\\]|\\\\.)*)"|'([^']*)'|([A-Za-z0-9_-]+))\\s*\\]\\s*(?:#.*)?$`
+  );
+  const lineRe = new RegExp(
+    `^\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=\\s*("(?:[^"\\\\]|\\\\.)*"|'[^']*')\\s*(?:#.*)?$`
+  );
+  for (const line of lines) {
+    if (/^\s*\[/.test(line)) {
+      const m = line.match(header);
+      if (!m) {
+        inProfile = false;
+        continue;
+      }
+      const name =
+        m[1] !== undefined
+          ? tomlUnescapeBasic(m[1])
+          : m[2] !== undefined
+            ? m[2]
+            : m[3];
+      inProfile = name === profileId;
+      continue;
+    }
+    if (!inProfile) continue;
+    const m = line.match(lineRe);
+    if (!m) continue;
+    const raw = m[1];
+    return raw.startsWith('"') && raw.endsWith('"')
+      ? tomlUnescapeBasic(raw.slice(1, -1))
+      : raw.slice(1, -1);
+  }
+  return null;
+}
+
 const BASE_URL_LINE_RE =
   /^(\s*base_url\s*=\s*)("(?:[^"\\]|\\.)*"|'[^']*')(.*)$/;
 
@@ -331,8 +423,35 @@ function readCodexConfig() {
 }
 
 function writeCodexConfig(text, bom) {
+  backupConfigOnce();
   writeFileAtomic(CODEX_CONFIG, (bom ? '\uFEFF' : '') + text);
 }
+
+/**
+ * One immutable pre-first-write snapshot for portable installs (and a second
+ * safety copy for setup). It is intentionally created only once: switching
+ * providers or toggling the proxy must not create a timestamped backup storm.
+ */
+function backupConfigOnce() {
+  if (!fs.existsSync(CODEX_CONFIG) || fs.existsSync(CODEX_CONFIG_BACKUP)) return;
+  try {
+    const raw = fs.readFileSync(CODEX_CONFIG, 'utf8');
+    fs.writeFileSync(CODEX_CONFIG_BACKUP, raw, 'utf8');
+    const meta = {
+      created: new Date().toISOString(),
+      app: 'codex-callid-fix',
+      version: VERSION,
+      source: 'manage.js-first-config-write',
+      sha256: crypto.createHash('sha256').update(raw).digest('hex'),
+    };
+    fs.writeFileSync(CODEX_CONFIG_BACKUP_META, JSON.stringify(meta, null, 2) + '\n', 'utf8');
+  } catch (err) {
+    // A backup failure must not prevent the requested config change, but make
+    // the operator aware through the normal log.
+    toolLog(`config.toml backup failed: ${err.message}`);
+  }
+}
+
 
 /** Reads a top-level (pre-first-table) string key from config.toml. */
 function readTopLevelString(text, key) {
@@ -1741,23 +1860,70 @@ async function cmdProvider(sub, arg, asJson) {
   }
 
   const previous = readTopLevelString(text, 'model_provider');
-  const nextText = setTopLevelString(text, 'model_provider', target);
+  const previousProfile = readTopLevelString(text, 'profile');
+  const profileMatches = matchingProfiles(text, target);
+  if (profileMatches.length > 1) {
+    throw new Error(
+      `multiple [profiles.*] entries point at ${target || 'openai'}: ` +
+        profileMatches.map((p) => p.id).join(', ') +
+        '; choose one in config.toml before switching'
+    );
+  }
+  const selectedProfile = profileMatches.length === 1 ? profileMatches[0].id : null;
+  const warnings = [];
+  let nextText = text;
+  if (selectedProfile) {
+    nextText = setTopLevelString(nextText, 'profile', selectedProfile);
+    nextText = setTopLevelString(nextText, 'model_provider', target);
+  } else {
+    if (previousProfile) {
+      warnings.push(
+        `cleared profile = "${previousProfile}"; no [profiles.*] matched ${target || 'openai'}`
+      );
+    }
+    nextText = setTopLevelString(nextText, 'profile', null);
+    nextText = setTopLevelString(nextText, 'model_provider', target);
+  }
   const changed = nextText !== text;
   if (changed) writeCodexConfig(nextText, bom);
 
-  const model = readTopLevelString(nextText, 'model');
-  const catalog = readTopLevelString(nextText, 'model_catalog_json');
-  const warnings = [];
-  if (target === null) {
-    if (model) {
+  const model =
+    (selectedProfile && readProfileString(nextText, selectedProfile, 'model')) ||
+    readTopLevelString(nextText, 'model');
+  const catalog =
+    (selectedProfile && readProfileString(nextText, selectedProfile, 'model_catalog_json')) ||
+    readTopLevelString(nextText, 'model_catalog_json');
+  if (!selectedProfile) {
+    warnings.push(
+      `no [profiles.*] matched ${target || 'openai'}; using top-level settings. ` +
+        'model/catalog may belong to the previous provider.'
+    );
+  } else {
+    const profileCatalog = readProfileString(
+      nextText,
+      selectedProfile,
+      'model_catalog_json'
+    );
+    const topCatalog = readTopLevelString(nextText, 'model_catalog_json');
+    if (!profileCatalog && topCatalog) {
       warnings.push(
-        `model is still "${model}"; if Codex reports an unknown model, pick an OpenAI model in Codex`
+        `profile "${selectedProfile}" has no model_catalog_json; ` +
+          `top-level ${topCatalog} may belong to the previous provider`
       );
     }
-    if (catalog) {
-      warnings.push(
-        `model_catalog_json is still ${catalog}; it may only contain models for the previous provider`
-      );
+  }
+  if (target === null) {
+    if (!selectedProfile) {
+      if (model) {
+        warnings.push(
+          `model is still "${model}"; if Codex reports an unknown model, pick an OpenAI model in Codex`
+        );
+      }
+      if (catalog) {
+        warnings.push(
+          `model_catalog_json is still ${catalog}; it may only contain models for the previous provider`
+        );
+      }
     }
   } else if (!cfg.providersAll && !cfg.providers.some((p) => p.id === target)) {
     warnings.push(
@@ -1769,6 +1935,8 @@ async function cmdProvider(sub, arg, asJson) {
     active: target,
     builtIn: target === null,
     previous,
+    previousProfile,
+    profile: selectedProfile,
     changed,
     model,
     catalog,
@@ -1783,6 +1951,7 @@ async function cmdProvider(sub, arg, asJson) {
       (changed ? '  [updated]' : '  [unchanged]')
   );
   if (target !== null) console.log(`  base_url: ${readProviderMeta(nextText, target).baseUrl}`);
+  if (selectedProfile) console.log(`  profile : ${selectedProfile}`);
   if (model) console.log(`  model   : ${model}`);
   for (const w of warnings) console.log(`  warning: ${w}`);
 }

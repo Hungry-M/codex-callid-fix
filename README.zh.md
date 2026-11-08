@@ -12,7 +12,7 @@ Codex 有时会把子线程的 app 工具委派（`create_thread` / `send_messag
 
 工具不绑定具体厂商：`config.toml` 里任意 `[model_providers.*]` 都可以接入；监听端口和上游代理端口都是配置项，不写死。
 
-> **状态：0.1.3 实验性兼容 shim。** 原始故障在两台可用测试机上都未复现，也没有抓到请求样本。不要把本项目当成已确认的 Codex 修复；请结合 `backend/server.log` 里的 `rewrote=` 和你的 provider/版本验证。
+> **状态：0.1.4 实验性兼容 shim。** 原始故障在两台可用测试机上都未复现，也没有抓到请求样本。不要把本项目当成已确认的 Codex 修复；请结合 `backend/server.log` 里的 `rewrote=` 和你的 provider/版本验证。
 >
 > 本项目是独立项目，与 OpenAI 没有隶属或背书关系。
 
@@ -38,12 +38,12 @@ Codex 有时会把子线程的 app 工具委派（`create_thread` / `send_messag
 下载并运行：
 
 ```text
-CodexCallIdFix-Setup-0.1.3.exe
+CodexCallIdFix-Setup-0.1.4.exe
 ```
 
 安装到当前用户目录 `%LOCALAPPDATA%\Programs\CodexCallIdFix`，不需要管理员权限；安装包自带 Node 运行时、README、LICENSE、AUTHORS 和本地签名工具。安装后会运行自检，通过后自动删除安装包。
 
-不想安装时，可以解压 `CodexCallIdFix-0.1.3-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
+不想安装时，可以解压 `CodexCallIdFix-0.1.4-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
 
 安装完成后：
 
@@ -73,7 +73,7 @@ CodexCallIdFix-Setup-0.1.3.exe
 每次安装/升级都会在复制新文件前自动创建备份：
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v0.1.3\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v0.1.4\
   manifest.json
   codex\config.toml        （安装时存在才复制）
   codex\.env               （安装时存在才复制）
@@ -81,6 +81,15 @@ CodexCallIdFix-Setup-0.1.3.exe
 ```
 
 实际备份根目录也会写入安装目录的 `backup-root.txt`。这个快照用于**手动灾难恢复**；卸载时不会拿它整体覆盖 `config.toml`，以免抹掉你安装后做的修改。
+
+便携版没有安装器式的时间戳备份。`manage.js` 第一次修改 `config.toml` 前会创建一次不可覆盖的快照：
+
+```text
+~/.codex/config.toml.callidfix-backup
+~/.codex/config.toml.callidfix-backup.json
+```
+
+后续切换 provider/路线不会覆盖它；需要新快照时请显式删除旧文件。
 
 卸载（`uninstall.cmd`，如果注册表项创建成功也可从 Windows“应用和功能”卸载）按顺序执行：
 
@@ -99,9 +108,12 @@ Portable ZIP 也包含 `cleanup.cmd` / `cleanup.ps1`。它会恢复工具改过�
 cleanup.cmd -Yes
 cleanup.cmd -Yes -KeepBackups
 cleanup.cmd -Yes -RemoveFolder
+cleanup.cmd -Yes -RemoveRoot
 ```
 
 `-RemoveFolder` 会在脚本退出后计划删除 portable 目录；不加则保留目录。
+
+`-RemoveRoot` 会删除 `CN=Hungry-M` 根以及它签发的**所有**子证书，包括其他项目；只应在测试机或明确要清除本地根时使用。不加时，如果根下还有其他项目子证书，cleanup 会保留根。
 
 如果第 1 步失败（例如 provider 的原始 URL 未知），卸载会弹窗提示，保留安装目录和备份，不会强行删除。先修复 `fallbackOriginalBaseUrls` 或对应的 provider 段，再运行 `uninstall.cmd`。
 
@@ -116,6 +128,21 @@ cleanup.cmd -Yes -RemoveFolder
 - `上游代理`：修复代理先连到配置的 HTTP 代理（`proxyHost:proxyPort`），发送 `CONNECT <供应商>:443`，再转发请求。供应商只能通过该代理访问时用这个。
 - `直连`：修复代理直接向供应商建立 TCP/TLS，绕过上游代理和 Windows 系统代理。
 - `自动回退`：先试上游代理（受 `autoProbeMs` 限制，默认 3 秒）；TCP/CONNECT 失败才改直连。如果上游代理连接成功、但供应商返回 HTTP 错误，不会自动改直连。
+
+## Provider profile
+
+切换 provider 时，工具会先找 `model_provider` 匹配的 `[profiles.<name>]`（或同名 profile）。只有一个匹配时，把顶层设为 `profile = "<name>"`，不修改 profile 内容。这样 `model`、`model_reasoning_effort`、`approval_policy`、`approvals_reviewer`、`sandbox_mode`、`model_catalog_json` 都保持 provider 专属。
+
+OpenAI 内置也建议写显式 profile：
+
+```toml
+[profiles.openai]
+model_provider = "openai"
+model = "gpt-5.6-sol"
+model_catalog_json = "C:\\Users\\you\\.codex\\model-catalogs\\openai.json"
+```
+
+不要把 `model`、`model_catalog_json`、approval/sandbox 等写进 `[model_providers.<id>]`：该表只放传输字段。没有匹配 profile 时，`provider use` 会清掉旧 `profile`，退回顶层设置并给出警告。
 
 ## 工作原理
 
@@ -307,7 +334,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.3.exe
+dist/CodexCallIdFix-Setup-0.1.4.exe
 dist/SHA256SUMS.txt
 ```
 
@@ -379,9 +406,10 @@ stop.cmd                 CLI 快捷方式（off）
 - **`EPERM ... config.toml...tmp`**：当前进程运行在受限令牌下（例如 Codex 的 Windows 沙箱），对 `~/.codex` 只有读权限。请从开始菜单或资源管理器启动 GUI，不要从 Codex 终端启动；`manage.js provider use` 同理。
 - **在 Codex 沙箱外运行**：从受限 Codex 终端写 `~/.codex` 可能被拒绝；用 GUI 或普通 PowerShell。
 - **安装器提示快捷方式/卸载注册表失败**：某些加固环境会拒绝未签名 EXE 写注册表或快捷方式。应用仍会安装并自检；用安装目录的 `uninstall.cmd` 卸载，桌面快捷方式没创建时用开始菜单快捷方式。
-- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-0.1.3-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
+- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-0.1.4-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
 - **“Could not create temporary directory”**：onefile 启动器解压到用户临时目录，不会在 EXE 旁创建 `_MEI` 文件夹。请确认 `%TEMP%` 可写，且没有被重定向到只读位置。
 - **自签名报 `NTE_PERM` / `0x80090010`**：当前进程在 Codex 沙箱令牌下，对 `%APPDATA%\Microsoft\Crypto\Keys` 只有读权限，无法创建证书私钥。请从开始菜单或资源管理器启动，不要从 Codex/DSH 终端启动；不要给沙箱组写 Crypto ACL。
+- **Codex 显示 `openai -- (missing section)`**：`config.toml` 设置了 `model_provider = "openai"`，但没有对应的 `[model_providers.openai]` 段。删除这一行可使用内置 OpenAI provider，或补上显式段；这是 provider 标签/配置问题，和 `auth.json` 认证是两回事。
 - **SmartScreen 显示“未知发布者”**：发布二进制默认未签名；正式签名见上面的“作者与代码签名”，或在本机使用 `Trust & Sign`。
 - **Windows“应用和功能”里没有条目**：用安装目录的 `uninstall.cmd`；它也会先执行 `manage.js off` 和 `autostart off` 再删除文件。
 - 日志：`backend/server.log`（5 MB 轮转）。
