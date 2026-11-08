@@ -489,6 +489,28 @@ Generated at runtime in `backend/`: `state.json`, `server.log`, `node-path.txt`,
 `backup-root.txt`; pre-install snapshots live under
 `%LOCALAPPDATA%\CodexCallIdFix\backups\`.
 
+## Windows Defender false positives
+
+The Windows installer is built with PyInstaller onefile and is currently
+unsigned. Defender sometimes reports a generic machine-learning detection such
+as `Trojan:Win32/Wacatac.H!ml` on this kind of packed executable. That can be a
+false positive, but do not assume it is safe:
+
+1. Download the complete file (not a `.crdownload` partial).
+2. Compare its SHA-256 with the release's `SHA256SUMS.txt`.
+3. If the hash matches, report the false positive to Microsoft:
+   <https://www.microsoft.com/en-us/wdsi/filesubmission>
+   (select the software-developer / incorrectly detected option, include the
+   detection name, release URL, and hash).
+4. If you need to test locally, use a file-specific allowance only after the
+   hash check, and remove the allowance afterwards. Do not disable real-time
+   protection or add broad exclusions.
+
+Self-signing does not fix Defender/SmartScreen reputation. For public
+distribution, use a CA-issued code-signing certificate and consider avoiding
+nested onefile packing (for example, an onedir app packaged by a conventional
+installer).
+
 ## Troubleshooting
 
 - **Codex still shows the old error** — fully quit Codex Desktop (not just close
