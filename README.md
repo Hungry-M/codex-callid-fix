@@ -154,6 +154,8 @@ The original failure has not been reproduced on the development host or the
 second test machine, and no captured request is available. Versions recorded on
 the development machine are in [`docs/environment.md`](docs/environment.md); the
 checklist for a future observed case is in [`docs/reproduce.md`](docs/reproduce.md).
+The 0.1.3 install/cleanup verification record is in
+[`docs/verification-0.1.3.md`](docs/verification-0.1.3.md).
 Do not attach `.codex` auth/state or API keys to an issue.
 
 ## Egress modes
