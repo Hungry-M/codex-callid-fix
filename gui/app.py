@@ -42,7 +42,7 @@ except Exception:  # pragma: no cover - optional dependency
     sv_ttk = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.3"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 CREATE_NEW_CONSOLE = 0x00000010 if os.name == "nt" else 0
 

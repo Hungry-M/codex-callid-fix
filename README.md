@@ -18,7 +18,7 @@ It is intentionally provider-agnostic: any `[model_providers.*]` section in
 Codex's `config.toml` can be routed through it, and the listening/upstream proxy
 ports are configuration values, not constants.
 
-> **Status: experimental compatibility shim (0.1.2).** The original failure has
+> **Status: experimental compatibility shim (0.1.3).** The original failure has
 > not been reproduced on either available test machine, and no captured request
 > is available. Do not treat this as a confirmed Codex fix; validate with
 > `rewrote=` in `backend/server.log` for your provider/version.
@@ -52,7 +52,7 @@ ports are configuration values, not constants.
 Download and run:
 
 ```text
-CodexCallIdFix-Setup-0.1.2.exe
+CodexCallIdFix-Setup-0.1.3.exe
 ```
 
 The installer is per-user (`%LOCALAPPDATA%\Programs\CodexCallIdFix`), needs no
@@ -61,7 +61,7 @@ runs an installation self-check. If the check passes, the installer deletes
 itself.
 
 If you do not want an install, extract
-`CodexCallIdFix-0.1.2-portable.zip` and run `CodexCallIdFix.exe` inside it. The
+`CodexCallIdFix-0.1.3-portable.zip` and run `CodexCallIdFix.exe` inside it. The
 portable folder contains `backend/`, `runtime/node.exe`, the docs, and the
 signing helper. The bare `CodexCallIdFix.exe` alone is not a complete
 distribution: it needs a sibling/parent `backend/` and a Node runtime (bundled
@@ -101,7 +101,7 @@ The choices are saved in `backend/gui.json` (generated runtime file).
 Every installation/upgrade creates an automatic pre-install backup under:
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v0.1.2\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v0.1.3\
   manifest.json
   codex\config.toml        (if present at install time)
   codex\.env               (if present)
@@ -119,10 +119,29 @@ registry entry was created) does this in order:
 1. `manage.js off` — restores tool-managed `base_url` values, restores/parks
    `.env` according to the current egress mode, and stops the proxy.
 2. `manage.js autostart off` — removes the logon autostart entry.
-3. Removes the uninstall registry key, Run value, and Start Menu/Desktop
+3. Removes the project child certificate; keeps the `CN=Hungry-M` root while
+   another project child certificate uses it.
+4. Removes the uninstall registry key, Run value, and Start Menu/Desktop
    shortcuts.
-4. Removes the install directory.
-5. Deletes the backup root **only after step 1 succeeded**.
+5. Removes the install directory.
+6. Deletes the backup root **only after step 1 succeeded**.
+
+### Portable cleanup
+
+The portable ZIP also includes `cleanup.cmd` / `cleanup.ps1`. It restores the
+tool-managed Codex config, disables autostart, removes the project certificate,
+removes matching Run/uninstall entries and shortcuts whose target is that
+folder, and optionally removes backups. It does not scan or delete unrelated
+Programs folders.
+
+```powershell
+cleanup.cmd -Yes
+cleanup.cmd -Yes -KeepBackups
+cleanup.cmd -Yes -RemoveFolder
+```
+
+`-RemoveFolder` schedules deletion of the portable folder after the script
+exits. Without it, the folder is left in place.
 
 If step 1 fails (for example a provider's original URL is unknown), uninstall
 shows a warning, keeps both the installation and the backup, and exits without
@@ -347,8 +366,8 @@ Outputs:
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.2.exe
-dist/CodexCallIdFix-0.1.2-portable.zip
+dist/CodexCallIdFix-Setup-0.1.3.exe
+dist/CodexCallIdFix-0.1.3-portable.zip
 dist/SHA256SUMS.txt
 ```
 
@@ -469,6 +488,7 @@ packaging/
   build.ps1              one-command release build
   sign.ps1               optional Authenticode signing
   trust-sign.ps1/.cmd    local self-signing helper (installed with the app)
+  cleanup.ps1/.cmd       portable/install cleanup helper
 assets/app.ico           application/installer icon
 .github/workflows/       CI build + optional signing + release
 AUTHORS.md               author metadata
@@ -536,14 +556,12 @@ installer).
   it, and use the Start Menu shortcut if the Desktop one was skipped.
 - **"backend/manage.js not found"** — a bare `CodexCallIdFix.exe` cannot run
   without the backend. Use the installer or extract
-  `CodexCallIdFix-0.1.2-portable.zip`; if running from a source checkout, keep
+  `CodexCallIdFix-0.1.3-portable.zip`; if running from a source checkout, keep
   `backend/` next to (or one level above) the EXE and provide Node via
   `runtime/node.exe` or `PATH`.
-- **"Could not create temporary directory"** — the onefile launcher extracts
-  next to the EXE (`--runtime-tmpdir "."`). Run it from a writable folder
-  (install folder / Downloads / Desktop), not from a read-only location such as
-  `Program Files` or a read-only network share. Start Menu shortcuts already set
-  the install folder as the working directory.
+- **"Could not create temporary directory"** — the onefile launcher extracts to
+  the user's temp directory, not next to the EXE. Make sure `%TEMP%` is writable
+  and not redirected to a read-only location.
 - **`NTE_PERM` / `0x80090010` when self-signing** — the app is running under
   Codex's sandbox token, which has read-only access to
   `%APPDATA%\Microsoft\Crypto\Keys`; Windows cannot create the certificate

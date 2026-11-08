@@ -3,7 +3,18 @@
 All notable changes are documented here. This project is pre-1.0; behavior may
 change between 0.1.x releases.
 
-## 0.1.2 — unreleased (prepared)
+## 0.1.3 — 2026-11-08
+
+- Add `cleanup.cmd` / `cleanup.ps1` to portable and installed builds. It restores
+  tool-managed Codex config, disables autostart, removes the project child
+  certificate (and the root only when unused), removes matching Run/uninstall
+  entries and shortcuts, and optionally removes backups.
+- Stop extracting the onefile `_MEI…` directory next to the EXE; use the
+  user's temp directory instead.
+- Remove the bare `CodexCallIdFix.exe` from release assets; ship only the setup
+  and portable ZIP.
+
+## 0.1.2 — 2026-11-06
 
 - Fix the local self-signing flow: wait for the exact GUI process, retry while
   the EXE is locked, verify the signature is `Valid`, log to

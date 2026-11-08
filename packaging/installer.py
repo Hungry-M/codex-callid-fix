@@ -13,7 +13,7 @@ The installer:
   * optionally deletes itself after a successful install
 
 Silent mode (used by the build tests):
-  CodexCallIdFix-Setup-0.1.2.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
+  CodexCallIdFix-Setup-0.1.3.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ except Exception:  # pragma: no cover - only on Windows
     winreg = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.3"
 AUTHOR = "Hungry-M"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexCallIdFix"
@@ -980,13 +980,21 @@ def write_result(path: str | None, payload: dict) -> None:
         pass
 
 
+def _safe_print(message: str) -> None:
+    """Best-effort stdout for windowed --silent runs (stdout may be invalid)."""
+    try:
+        print(message, flush=True)
+    except Exception:
+        pass
+
+
 def silent_install(args: argparse.Namespace) -> int:
     target = Path(args.dir) if args.dir else default_install_dir()
     log_lines: list[str] = []
 
     def log(message: str) -> None:
         log_lines.append(message)
-        print(message, flush=True)
+        _safe_print(message)
 
     try:
         install(
@@ -998,7 +1006,7 @@ def silent_install(args: argparse.Namespace) -> int:
     except Exception as exc:  # noqa: BLE001
         import traceback
 
-        print(f"INSTALL_FAILED: {exc}", flush=True)
+        _safe_print(f"INSTALL_FAILED: {exc}")
         write_result(
             args.result_file,
             {
@@ -1014,7 +1022,7 @@ def silent_install(args: argparse.Namespace) -> int:
         launch_app(target)
     if not args.keep_installer:
         schedule_self_delete()
-    print(f"INSTALL_OK {target}", flush=True)
+    _safe_print(f"INSTALL_OK {target}")
     write_result(
         args.result_file,
         {"ok": True, "dir": str(target), "version": APP_VERSION, "log": log_lines},

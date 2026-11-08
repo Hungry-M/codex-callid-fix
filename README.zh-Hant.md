@@ -12,7 +12,7 @@ Codex 有時會把子執行緒的 app 工具委派（`create_thread` / `send_mes
 
 工具不綁定特定廠商：`config.toml` 裡任何 `[model_providers.*]` 都可以接入；監聽連接埠和上游代理連接埠都是設定值，不是寫死的。
 
-> **狀態：0.1.2 實驗性相容 shim。** 原始故障在兩台可用測試機上都未重現，也沒有抓到請求樣本。不要把本專案當成已確認的 Codex 修復；請結合 `backend/server.log` 裡的 `rewrote=` 和你的供應商/版本驗證。
+> **狀態：0.1.3 實驗性相容 shim。** 原始故障在兩台可用測試機上都未重現，也沒有抓到請求樣本。不要把本專案當成已確認的 Codex 修復；請結合 `backend/server.log` 裡的 `rewrote=` 和你的供應商/版本驗證。
 >
 > 本專案是獨立專案，與 OpenAI 沒有隸屬或背書關係。
 
@@ -38,12 +38,12 @@ Codex 有時會把子執行緒的 app 工具委派（`create_thread` / `send_mes
 下載並執行：
 
 ```text
-CodexCallIdFix-Setup-0.1.2.exe
+CodexCallIdFix-Setup-0.1.3.exe
 ```
 
 安裝到目前使用者目錄 `%LOCALAPPDATA%\Programs\CodexCallIdFix`，不需要系統管理員權限；安裝套件自帶 Node 執行環境、README、LICENSE、AUTHORS 和本機簽名工具。安裝後會執行自檢，通過後自動刪除安裝套件。
 
-不想安裝時，可以解壓 `CodexCallIdFix-0.1.2-portable.zip`，執行裡面的 `CodexCallIdFix.exe`。可攜包包含 `backend/`、`runtime/node.exe`、文件、簽名工具。單獨一個 `CodexCallIdFix.exe` 不是完整發行包：它需要同級或上一級目錄有 `backend/`，並且有可用的 Node（可攜 `runtime/node.exe` 或 PATH 裡的 `node`）。
+不想安裝時，可以解壓 `CodexCallIdFix-0.1.3-portable.zip`，執行裡面的 `CodexCallIdFix.exe`。可攜包包含 `backend/`、`runtime/node.exe`、文件、簽名工具。單獨一個 `CodexCallIdFix.exe` 不是完整發行包：它需要同級或上一級目錄有 `backend/`，並且有可用的 Node（可攜 `runtime/node.exe` 或 PATH 裡的 `node`）。
 
 安裝完成後：
 
@@ -73,7 +73,7 @@ CodexCallIdFix-Setup-0.1.2.exe
 每次安裝/升級都會在複製新檔案前自動建立備份：
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<時間戳>-v0.1.2\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<時間戳>-v0.1.3\
   manifest.json
   codex\config.toml        （安裝時存在才複製）
   codex\.env               （安裝時存在才複製）
@@ -86,9 +86,22 @@ CodexCallIdFix-Setup-0.1.2.exe
 
 1. `manage.js off`：還原工具改過的 `base_url`，依目前 egress 還原/停放 `.env`，停止代理。
 2. `manage.js autostart off`：刪除登入自動啟動項目。
-3. 刪除解除安裝登錄檔項目、Run 值和開始選單/桌面捷徑。
-4. 刪除安裝目錄。
-5. **只有第 1 步成功後才刪除備份根目錄**。
+3. 刪除專案子憑證；如果 `CN=Hungry-M` 根下還有其他專案子憑證則保留根。
+4. 刪除解除安裝登錄檔項目、Run 值和開始選單/桌面捷徑。
+5. 刪除安裝目錄。
+6. **只有第 1 步成功後才刪除備份根目錄**。
+
+### 可攜版清理
+
+Portable ZIP 也包含 `cleanup.cmd` / `cleanup.ps1`。它會還原工具改過的 Codex 設定、關閉自動啟動、刪除專案子憑證、刪除符合的 Run/解除安裝登錄檔項目，以及 target 指向該目錄的捷徑；可選擇刪除備份。它不會掃描或刪除無關的 Programs 目錄。
+
+```powershell
+cleanup.cmd -Yes
+cleanup.cmd -Yes -KeepBackups
+cleanup.cmd -Yes -RemoveFolder
+```
+
+`-RemoveFolder` 會在指令碼結束後排程刪除 portable 目錄；不加則保留目錄。
 
 如果第 1 步失敗（例如供應商的原始 URL 未知），解除安裝會顯示警告，保留安裝目錄和備份，不會強行刪除。先修正 `fallbackOriginalBaseUrls` 或對應的供應商區段，再執行 `uninstall.cmd`。
 
@@ -266,18 +279,20 @@ trust-sign.ps1
 
 安裝後可以執行 **開始選單 → Trust & Sign Codex Call ID Fix**，或 GUI 選單 **選單 → 本機信任並簽名…**。它會：
 
-1. 在 `Cert:\CurrentUser\My` 建立自簽程式碼簽章憑證
-   （`CN=Hungry-M (Codex Call ID Fix)`）；
-2. 把公開憑證加入 `CurrentUser\Root` 和 `CurrentUser\TrustedPublisher`；
-3. 等待 GUI 關閉，用 SHA-256 替 `CodexCallIdFix.exe` 簽名，然後重新開啟。
+1. 建立或重用本機根 CA `CN=Hungry-M`，加入 `CurrentUser\My` 和 `CurrentUser\Root`；
+2. 由根簽發專案子憑證 `CN=codex-callid-fix`，加入 `CurrentUser\My` 和 `CurrentUser\TrustedPublisher`；
+3. 等待所有同路徑程序結束、EXE 檔案解鎖，用子憑證 SHA-256 簽名；
+4. 無論成功或失敗都重新開啟程式；失敗寫入 `%LOCALAPPDATA%\CodexCallIdFix\trust-sign.log`。
 
-這能消除本機的「未知發行者」狀態，也可用於本機應用程式控制原則；**不會**讓其他電腦信任，SmartScreen 的信譽判斷也可能仍然生效。只在自己控制的機器上使用。刪除本機憑證：
+根可以在本機其他專案間重用；每個專案使用自己的子憑證。`-RemoveCert` 先刪除 `codex-callid-fix` 子憑證，只有根下沒有其他專案子憑證時才刪除 `CN=Hungry-M` 根；安裝器的解除安裝程式也會呼叫同一清理邏輯。
+
+這會讓檔案由**本機信任的發行者**簽名，File Properties → Digital Signatures 應顯示簽名者；**不會**讓其他電腦信任，SmartScreen 信譽判斷仍可能警告。它只適合本機開發/測試，不要用它讓別人的 A/B 軟體自動互信。刪除憑證：
 
 ```powershell
 trust-sign.cmd -RemoveCert
 ```
 
-`-RemoveCert` 使用 `certutil -user -delstore`，因為 PowerShell 不允許直接刪除目前使用者的 Root 存放區項目。
+`-RemoveCert` 使用 `certutil -user -delstore`，因為 PowerShell 不允許直接刪除目前使用者的 Root 存放區項目。若遇到 `NTE_PERM`，通常是從 Codex/DSH 沙箱啟動；請從開始選單或檔案總管啟動後重試。
 
 ## 從原始碼建置
 
@@ -292,7 +307,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.2.exe
+dist/CodexCallIdFix-Setup-0.1.3.exe
 dist/SHA256SUMS.txt
 ```
 
@@ -331,6 +346,7 @@ packaging/
   build.ps1              一鍵發佈建置
   sign.ps1               可選正式簽章
   trust-sign.ps1/.cmd    本機自簽工具
+  cleanup.ps1/.cmd       可攜版/安裝版清理工具
 assets/app.ico           應用程式/安裝套件圖示
 .github/workflows/       CI 建置 + 可選簽章 + Release
 AUTHORS.md               作者資訊
@@ -339,6 +355,19 @@ stop.cmd                 CLI 捷徑（off）
 ```
 
 執行時在 `backend/` 產生：`state.json`、`server.log`、`node-path.txt`、`gui.json`。安裝根目錄還有 `backup-root.txt`；安裝前快照在 `%LOCALAPPDATA%\CodexCallIdFix\backups\`。
+
+## Windows Defender 誤報
+
+安裝套件使用 PyInstaller onefile，且目前未簽章；Defender 可能對這類封裝程式回報 `Trojan:Win32/Wacatac.H!ml` 之類的機器學習偵測。它可能是誤報，但不要直接假設安全：
+
+1. 下載完整檔案（不是 `.crdownload` 這種未完成下載）；
+2. 用 Release 的 `SHA256SUMS.txt` 核對 SHA-256；
+3. 雜湊符合後，向 Microsoft 提交誤報：
+   <https://www.microsoft.com/en-us/wdsi/filesubmission>
+   （選擇軟體開發者/誤報方向，附偵測名稱、Release URL、雜湊）；
+4. 如需本機測試，只在雜湊確認後對該檔案單獨放行，測試完移除；不要關閉即時保護或排除整個目錄。
+
+本機自簽不能解決 Defender/SmartScreen 信譽問題。公開發佈建議使用 CA 程式碼簽章憑證，並考慮把安裝器改成 onedir + 一般安裝框架，減少嵌套 onefile 的啟發式命中。
 
 ## 疑難排解
 
@@ -350,8 +379,9 @@ stop.cmd                 CLI 捷徑（off）
 - **`EPERM ... config.toml...tmp`**：目前程序執行在受限權杖下（例如 Codex 的 Windows 沙箱），對 `~/.codex` 只有讀取權限。請從開始選單或檔案總管啟動 GUI，不要從 Codex 終端啟動；`manage.js provider use` 同理。
 - **在 Codex 沙箱外執行**：從受限 Codex 終端寫 `~/.codex` 可能被拒絕；用 GUI 或一般 PowerShell。
 - **安裝器提示捷徑/解除安裝登錄檔失敗**：某些加固環境會拒絕未簽章 EXE 寫登錄檔或捷徑。應用程式仍會安裝並自檢；用安裝目錄的 `uninstall.cmd` 解除安裝，桌面捷徑沒建立時用開始選單捷徑。
-- **“backend/manage.js not found”**：單獨一個 `CodexCallIdFix.exe` 沒有後端。請用安裝套件，或解壓 `CodexCallIdFix-0.1.2-portable.zip`；從原始碼目錄執行時，把 `backend/` 放在 EXE 同級或上一級，並提供 `runtime/node.exe` 或 PATH 中的 Node。
-- **“Could not create temporary directory”**：onefile 啟動器現在解壓到 EXE 旁邊（`--runtime-tmpdir "."`）。請從可寫目錄執行（安裝目錄 / Downloads / 桌面），不要從 `Program Files` 或唯讀網路共用執行。開始選單捷徑已設定工作目錄。
+- **“backend/manage.js not found”**：單獨一個 `CodexCallIdFix.exe` 沒有後端。請用安裝套件，或解壓 `CodexCallIdFix-0.1.3-portable.zip`；從原始碼目錄執行時，把 `backend/` 放在 EXE 同級或上一級，並提供 `runtime/node.exe` 或 PATH 中的 Node。
+- **“Could not create temporary directory”**：onefile 啟動器解壓到使用者暫存目錄，不會在 EXE 旁建立 `_MEI` 資料夾。請確認 `%TEMP%` 可寫，且沒有被重新導向到唯讀位置。
+- **本機自簽報 `NTE_PERM` / `0x80090010`**：目前程序在 Codex 沙箱權杖下，對 `%APPDATA%\Microsoft\Crypto\Keys` 只有讀取權限，無法建立憑證私鑰。請從開始選單或檔案總管啟動，不要從 Codex/DSH 終端啟動；不要給沙箱群組寫 Crypto ACL。
 - **SmartScreen 顯示「未知發行者」**：發佈的二進位檔預設未簽章；正式簽章見上面的「作者與程式碼簽章」，或在本機使用 `Trust & Sign`。
 - **Windows「應用程式與功能」裡沒有項目**：用安裝目錄的 `uninstall.cmd`；它也會先執行 `manage.js off` 和 `autostart off` 再刪除檔案。
 - 記錄：`backend/server.log`（5 MB 輪轉）。
