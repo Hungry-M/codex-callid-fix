@@ -12,7 +12,7 @@ Codex 有时会把子线程的 app 工具委派（`create_thread` / `send_messag
 
 工具不绑定具体厂商：`config.toml` 里任意 `[model_providers.*]` 都可以接入；监听端口和上游代理端口都是配置项，不写死。
 
-> **状态：0.1.4 实验性兼容 shim。** 原始故障在两台可用测试机上都未复现，也没有抓到请求样本。不要把本项目当成已确认的 Codex 修复；请结合 `backend/server.log` 里的 `rewrote=` 和你的 provider/版本验证。
+> **状态：0.1.5 实验性兼容 shim。** 原始故障在两台可用测试机上都未复现，也没有抓到请求样本。不要把本项目当成已确认的 Codex 修复；请结合 `backend/server.log` 里的 `rewrote=` 和你的 provider/版本验证。
 >
 > 本项目是独立项目，与 OpenAI 没有隶属或背书关系。
 
@@ -38,12 +38,12 @@ Codex 有时会把子线程的 app 工具委派（`create_thread` / `send_messag
 下载并运行：
 
 ```text
-CodexCallIdFix-Setup-0.1.4.exe
+CodexCallIdFix-Setup-0.1.5.exe
 ```
 
 安装到当前用户目录 `%LOCALAPPDATA%\Programs\CodexCallIdFix`，不需要管理员权限；安装包自带 Node 运行时、README、LICENSE、AUTHORS 和本地签名工具。安装后会运行自检，通过后自动删除安装包。
 
-不想安装时，可以解压 `CodexCallIdFix-0.1.4-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
+不想安装时，可以解压 `CodexCallIdFix-0.1.5-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
 
 安装完成后：
 
@@ -73,7 +73,7 @@ CodexCallIdFix-Setup-0.1.4.exe
 每次安装/升级都会在复制新文件前自动创建备份：
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v0.1.4\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v0.1.5\
   manifest.json
   codex\config.toml        （安装时存在才复制）
   codex\.env               （安装时存在才复制）
@@ -129,20 +129,27 @@ cleanup.cmd -Yes -RemoveRoot
 - `直连`：修复代理直接向供应商建立 TCP/TLS，绕过上游代理和 Windows 系统代理。
 - `自动回退`：先试上游代理（受 `autoProbeMs` 限制，默认 3 秒）；TCP/CONNECT 失败才改直连。如果上游代理连接成功、但供应商返回 HTTP 错误，不会自动改直连。
 
-## Provider profile
+## Provider profile（Desktop 覆盖）
 
-切换 provider 时，工具会先找 `model_provider` 匹配的 `[profiles.<name>]`（或同名 profile）。只有一个匹配时，把顶层设为 `profile = "<name>"`，不修改 profile 内容。这样 `model`、`model_reasoning_effort`、`approval_policy`、`approvals_reviewer`、`sandbox_mode`、`model_catalog_json` 都保持 provider 专属。
+Codex 0.134+ 已移除顶层 `profile = "<name>"` 和 `[profiles.<name>]` 表。profile 现在是独立文件：
 
-OpenAI 内置也建议写显式 profile：
+```text
+~/.codex/<name>.config.toml
+```
+
+CLI 用 `codex --profile <name>` 选择。Codex Desktop 没有 profile 选择器，所以本工具读取 `<provider>.config.toml`，把受管键（`model`、`model_provider`、reasoning/verbosity、catalog、approval、approvals_reviewer、review_model、sandbox）覆盖到主 `config.toml` 顶层。工具不会再写 legacy `profile`。
+
+首次切换时，会把当前顶层设置快照到 `<当前 provider>.config.toml`（只创建一次，不覆盖）。目标没有 profile 时，会清除 `model` 和 `model_catalog_json`，不把上一个 provider 的参数带过去，并给出警告。
+
+profile 文件示例（顶层键，不带 `[profiles.*]`）：
 
 ```toml
-[profiles.openai]
 model_provider = "openai"
 model = "gpt-5.6-sol"
 model_catalog_json = "C:\\Users\\you\\.codex\\model-catalogs\\openai.json"
 ```
 
-不要把 `model`、`model_catalog_json`、approval/sandbox 等写进 `[model_providers.<id>]`：该表只放传输字段。没有匹配 profile 时，`provider use` 会清掉旧 `profile`，退回顶层设置并给出警告。
+provider 的传输字段仍放在 `config.toml` 的 `[model_providers.<id>]` 中；不要把 model/catalog/approval/sandbox 写进这个表。CLI profile 模式直接使用 `codex --profile <name>`；Desktop 的覆盖只是兼容桥。
 
 ## 工作原理
 
@@ -334,7 +341,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.4.exe
+dist/CodexCallIdFix-Setup-0.1.5.exe
 dist/SHA256SUMS.txt
 ```
 
@@ -406,7 +413,7 @@ stop.cmd                 CLI 快捷方式（off）
 - **`EPERM ... config.toml...tmp`**：当前进程运行在受限令牌下（例如 Codex 的 Windows 沙箱），对 `~/.codex` 只有读权限。请从开始菜单或资源管理器启动 GUI，不要从 Codex 终端启动；`manage.js provider use` 同理。
 - **在 Codex 沙箱外运行**：从受限 Codex 终端写 `~/.codex` 可能被拒绝；用 GUI 或普通 PowerShell。
 - **安装器提示快捷方式/卸载注册表失败**：某些加固环境会拒绝未签名 EXE 写注册表或快捷方式。应用仍会安装并自检；用安装目录的 `uninstall.cmd` 卸载，桌面快捷方式没创建时用开始菜单快捷方式。
-- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-0.1.4-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
+- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-0.1.5-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
 - **“Could not create temporary directory”**：onefile 启动器解压到用户临时目录，不会在 EXE 旁创建 `_MEI` 文件夹。请确认 `%TEMP%` 可写，且没有被重定向到只读位置。
 - **自签名报 `NTE_PERM` / `0x80090010`**：当前进程在 Codex 沙箱令牌下，对 `%APPDATA%\Microsoft\Crypto\Keys` 只有读权限，无法创建证书私钥。请从开始菜单或资源管理器启动，不要从 Codex/DSH 终端启动；不要给沙箱组写 Crypto ACL。
 - **Codex 显示 `openai -- (missing section)`**：`config.toml` 设置了 `model_provider = "openai"`，但没有对应的 `[model_providers.openai]` 段。删除这一行可使用内置 OpenAI provider，或补上显式段；这是 provider 标签/配置问题，和 `auth.json` 认证是两回事。

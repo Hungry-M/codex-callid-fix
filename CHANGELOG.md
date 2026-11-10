@@ -3,6 +3,19 @@
 All notable changes are documented here. This project is pre-1.0; behavior may
 change between 0.1.x releases.
 
+## 0.1.5 — 2026-11-11
+
+- Adapt to Codex 0.134+ profile removal: stop writing the legacy
+  `profile = "<name>"` selector and `[profiles.*]` tables.
+- Read official `<provider>.config.toml` profile layers and overlay their
+  managed keys into the Desktop top-level config.
+- On the first switch, snapshot the current provider settings into
+  `<current>.config.toml`; never overwrite an existing snapshot.
+- If the target has no profile, clear stale `model` / `model_catalog_json`
+  instead of carrying the previous provider's values.
+- Import legacy `[profiles.*]` values into `<provider>.config.toml` when no
+  official profile exists, with a warning to remove the old table.
+
 ## 0.1.4 — 2026-11-08
 
 - Clear PyInstaller bootstrap variables (`_MEIPASS2`, `_MEIPASS`, `_PYI*`)

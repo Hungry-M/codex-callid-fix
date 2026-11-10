@@ -24,7 +24,7 @@ not a confirmed fix.
 | Windows | Windows 10 22H2 build 19045, 64-bit |
 | Node.js | v24.13.0 |
 | Python | 3.10.0 |
-| Codex Call ID Fix | 0.1.4 |
+| Codex Call ID Fix | 0.1.5 |
 
 ## Notes
 

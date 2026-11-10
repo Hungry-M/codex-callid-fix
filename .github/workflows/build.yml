@@ -58,8 +58,8 @@ jobs:
         with:
           name: CodexCallIdFix-windows
           path: |
-            dist/CodexCallIdFix-Setup-0.1.4.exe
-            dist/CodexCallIdFix-0.1.4-portable.zip
+            dist/CodexCallIdFix-Setup-0.1.5.exe
+            dist/CodexCallIdFix-0.1.5-portable.zip
             dist/SHA256SUMS.txt
             README.md
             README.zh.md
@@ -77,8 +77,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/CodexCallIdFix-Setup-0.1.4.exe
-            dist/CodexCallIdFix-0.1.4-portable.zip
+            dist/CodexCallIdFix-Setup-0.1.5.exe
+            dist/CodexCallIdFix-0.1.5-portable.zip
             dist/SHA256SUMS.txt
             README.md
             README.zh.md

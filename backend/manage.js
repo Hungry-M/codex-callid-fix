@@ -31,7 +31,7 @@ const http = require('http');
 const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 
-const VERSION = '0.1.4';
+const VERSION = '0.1.5';
 const TOOL_DIR = __dirname;
 const DATA_DIR = path.resolve(process.env.CALLIDFIX_DATA_DIR || TOOL_DIR);
 const CONFIG_FILE = path.join(DATA_DIR, 'callidfix.config.json');
@@ -267,18 +267,6 @@ function listProfiles(text) {
   return found;
 }
 
-function matchingProfiles(text, targetId) {
-  const wanted = targetId === null ? 'openai' : targetId;
-  const profiles = listProfiles(text);
-  const byProvider = profiles.filter((p) => p.modelProvider === wanted);
-  if (byProvider.length) return byProvider;
-  // A profile named after the provider is a useful convention, but only when
-  // it does not explicitly point somewhere else.
-  return profiles.filter(
-    (p) => p.id === wanted && (!p.modelProvider || p.modelProvider === wanted)
-  );
-}
-
 function readProfileString(text, profileId, key) {
   const lines = text.split(/\r?\n/);
   let inProfile = false;
@@ -314,6 +302,85 @@ function readProfileString(text, profileId, key) {
   }
   return null;
 }
+
+const PROFILE_MANAGED_KEYS = [
+  'model',
+  'model_provider',
+  'model_reasoning_effort',
+  'model_reasoning_summary',
+  'model_verbosity',
+  'model_catalog_json',
+  'approval_policy',
+  'approvals_reviewer',
+  'review_model',
+  'sandbox_mode',
+];
+
+function profileLayerPath(providerId) {
+  const safe = String(providerId || 'openai').replace(/[^A-Za-z0-9_-]/g, '-');
+  return path.join(CODEX_HOME, `${safe}.config.toml`);
+}
+
+function readProfileLayer(providerId) {
+  const file = profileLayerPath(providerId);
+  if (!fs.existsSync(file)) return { file, exists: false, values: {} };
+  const text = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
+  const values = {};
+  for (const key of PROFILE_MANAGED_KEYS) {
+    const value = readTopLevelString(text, key);
+    if (value !== null) values[key] = value;
+  }
+  return { file, exists: true, values };
+}
+
+function writeProfileLayer(providerId, values, source) {
+  const file = profileLayerPath(providerId);
+  if (fs.existsSync(file)) return file;
+  const lines = [
+    `# callidfix snapshot (${source})`,
+    '# This is an official Codex profile-v2 file: top-level keys, no [profiles.*].',
+    '# CLI: codex --profile ' + String(providerId || 'openai').replace(/[^A-Za-z0-9_-]/g, '-'),
+    '',
+  ];
+  for (const key of PROFILE_MANAGED_KEYS) {
+    if (values[key] !== undefined && values[key] !== null) {
+      lines.push(`${key} = ${JSON.stringify(String(values[key]))}`);
+    }
+  }
+  lines.push('');
+  try {
+    fs.writeFileSync(file, lines.join('\n'), 'utf8');
+    return file;
+  } catch (err) {
+    toolLog(`profile snapshot write failed (${file}): ${err.message}`);
+    return null;
+  }
+}
+
+function snapshotCurrentProvider(text) {
+  const current = readTopLevelString(text, 'model_provider') || 'openai';
+  const file = profileLayerPath(current);
+  if (fs.existsSync(file)) return null;
+  const values = { model_provider: current };
+  for (const key of PROFILE_MANAGED_KEYS) {
+    if (key === 'model_provider') continue;
+    const value = readTopLevelString(text, key);
+    if (value !== null) values[key] = value;
+  }
+  if (Object.keys(values).length === 1) return null;
+  return writeProfileLayer(current, values, 'pre-switch');
+}
+
+function legacyProfileFor(text, targetId) {
+  const wanted = targetId === null ? 'openai' : targetId;
+  const profiles = listProfiles(text);
+  return (
+    profiles.find((p) => p.modelProvider === wanted) ||
+    profiles.find((p) => p.id === wanted && (!p.modelProvider || p.modelProvider === wanted)) ||
+    null
+  );
+}
+
 
 const BASE_URL_LINE_RE =
   /^(\s*base_url\s*=\s*)("(?:[^"\\]|\\.)*"|'[^']*')(.*)$/;
@@ -1861,82 +1928,86 @@ async function cmdProvider(sub, arg, asJson) {
 
   const previous = readTopLevelString(text, 'model_provider');
   const previousProfile = readTopLevelString(text, 'profile');
-  const profileMatches = matchingProfiles(text, target);
-  if (profileMatches.length > 1) {
-    throw new Error(
-      `multiple [profiles.*] entries point at ${target || 'openai'}: ` +
-        profileMatches.map((p) => p.id).join(', ') +
-        '; choose one in config.toml before switching'
-    );
-  }
-  const selectedProfile = profileMatches.length === 1 ? profileMatches[0].id : null;
+  const legacyProfiles = listProfiles(text);
   const warnings = [];
-  let nextText = text;
-  if (selectedProfile) {
-    nextText = setTopLevelString(nextText, 'profile', selectedProfile);
-    nextText = setTopLevelString(nextText, 'model_provider', target);
-  } else {
-    if (previousProfile) {
-      warnings.push(
-        `cleared profile = "${previousProfile}"; no [profiles.*] matched ${target || 'openai'}`
-      );
-    }
-    nextText = setTopLevelString(nextText, 'profile', null);
-    nextText = setTopLevelString(nextText, 'model_provider', target);
-  }
-  const changed = nextText !== text;
-  if (changed) writeCodexConfig(nextText, bom);
-
-  const model =
-    (selectedProfile && readProfileString(nextText, selectedProfile, 'model')) ||
-    readTopLevelString(nextText, 'model');
-  const catalog =
-    (selectedProfile && readProfileString(nextText, selectedProfile, 'model_catalog_json')) ||
-    readTopLevelString(nextText, 'model_catalog_json');
-  if (!selectedProfile) {
+  const snapshotFile = snapshotCurrentProvider(text);
+  if (snapshotFile) {
     warnings.push(
-      `no [profiles.*] matched ${target || 'openai'}; using top-level settings. ` +
-        'model/catalog may belong to the previous provider.'
+      `saved current ${previous || 'openai'} settings to ${snapshotFile}`
     );
-  } else {
-    const profileCatalog = readProfileString(
-      nextText,
-      selectedProfile,
-      'model_catalog_json'
-    );
-    const topCatalog = readTopLevelString(nextText, 'model_catalog_json');
-    if (!profileCatalog && topCatalog) {
-      warnings.push(
-        `profile "${selectedProfile}" has no model_catalog_json; ` +
-          `top-level ${topCatalog} may belong to the previous provider`
-      );
+  }
+
+  const targetId = target === null ? 'openai' : target;
+  let layer = readProfileLayer(targetId);
+  if (!layer.exists) {
+    const legacy = legacyProfileFor(text, target);
+    if (legacy) {
+      const legacyValues = {};
+      for (const key of PROFILE_MANAGED_KEYS) {
+        const value = readProfileString(text, legacy.id, key);
+        if (value !== null) legacyValues[key] = value;
+      }
+      legacyValues.model_provider = targetId;
+      const imported = writeProfileLayer(targetId, legacyValues, 'legacy profile import');
+      if (imported) {
+        layer = { file: imported, exists: true, values: legacyValues };
+        warnings.push(
+          `imported legacy [profiles.${legacy.id}] into ${imported}; ` +
+            'remove the legacy table after verifying'
+        );
+      }
     }
   }
-  if (target === null) {
-    if (!selectedProfile) {
-      if (model) {
-        warnings.push(
-          `model is still "${model}"; if Codex reports an unknown model, pick an OpenAI model in Codex`
-        );
-      }
-      if (catalog) {
-        warnings.push(
-          `model_catalog_json is still ${catalog}; it may only contain models for the previous provider`
-        );
-      }
+
+  let nextText = setTopLevelString(text, 'profile', null);
+  nextText = setTopLevelString(nextText, 'model_provider', target);
+  if (layer.exists) {
+    for (const key of PROFILE_MANAGED_KEYS) {
+      if (key === 'model_provider') continue;
+      const value = layer.values[key];
+      nextText = setTopLevelString(nextText, key, value === undefined ? null : value);
     }
-  } else if (!cfg.providersAll && !cfg.providers.some((p) => p.id === target)) {
+    nextText = setTopLevelString(nextText, 'model_provider', target);
+  } else {
+    // No profile for this provider: do not carry another provider's model or
+    // catalog into it. Other global keys remain untouched.
+    nextText = setTopLevelString(nextText, 'model', null);
+    nextText = setTopLevelString(nextText, 'model_catalog_json', null);
+    warnings.push(
+      `no ${layer.file} found; cleared model/model_catalog_json and set model_provider. ` +
+        'Create that profile file to restore provider-specific defaults.'
+    );
+  }
+
+  if (previousProfile) {
+    warnings.push(
+      `removed legacy profile = "${previousProfile}"; current Codex uses <name>.config.toml`
+    );
+  }
+  if (legacyProfiles.length) {
+    warnings.push(
+      'legacy [profiles.*] blocks are ignored by current Codex; migrate them to <name>.config.toml'
+    );
+  }
+  if (target !== null && !cfg.providersAll && !cfg.providers.some((p) => p.id === target)) {
     warnings.push(
       `${target} is not in callidfix.config.json providers; add it or set providers to "all"`
     );
   }
+
+  const changed = nextText !== text;
+  if (changed) writeCodexConfig(nextText, bom);
+  const model = readTopLevelString(nextText, 'model');
+  const catalog = readTopLevelString(nextText, 'model_catalog_json');
 
   const result = {
     active: target,
     builtIn: target === null,
     previous,
     previousProfile,
-    profile: selectedProfile,
+    profileFile: layer.exists ? layer.file : null,
+    profileLoaded: layer.exists,
+    snapshotFile,
     changed,
     model,
     catalog,
@@ -1951,7 +2022,7 @@ async function cmdProvider(sub, arg, asJson) {
       (changed ? '  [updated]' : '  [unchanged]')
   );
   if (target !== null) console.log(`  base_url: ${readProviderMeta(nextText, target).baseUrl}`);
-  if (selectedProfile) console.log(`  profile : ${selectedProfile}`);
+  if (layer.exists) console.log(`  profile : ${layer.file}`);
   if (model) console.log(`  model   : ${model}`);
   for (const w of warnings) console.log(`  warning: ${w}`);
 }

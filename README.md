@@ -18,7 +18,7 @@ It is intentionally provider-agnostic: any `[model_providers.*]` section in
 Codex's `config.toml` can be routed through it, and the listening/upstream proxy
 ports are configuration values, not constants.
 
-> **Status: experimental compatibility shim (0.1.4).** The original failure has
+> **Status: experimental compatibility shim (0.1.5).** The original failure has
 > not been reproduced on either available test machine, and no captured request
 > is available. Do not treat this as a confirmed Codex fix; validate with
 > `rewrote=` in `backend/server.log` for your provider/version.
@@ -52,7 +52,7 @@ ports are configuration values, not constants.
 Download and run:
 
 ```text
-CodexCallIdFix-Setup-0.1.4.exe
+CodexCallIdFix-Setup-0.1.5.exe
 ```
 
 The installer is per-user (`%LOCALAPPDATA%\Programs\CodexCallIdFix`), needs no
@@ -61,7 +61,7 @@ runs an installation self-check. If the check passes, the installer deletes
 itself.
 
 If you do not want an install, extract
-`CodexCallIdFix-0.1.4-portable.zip` and run `CodexCallIdFix.exe` inside it. The
+`CodexCallIdFix-0.1.5-portable.zip` and run `CodexCallIdFix.exe` inside it. The
 portable folder contains `backend/`, `runtime/node.exe`, the docs, and the
 signing helper. The bare `CodexCallIdFix.exe` alone is not a complete
 distribution: it needs a sibling/parent `backend/` and a Node runtime (bundled
@@ -101,7 +101,7 @@ The choices are saved in `backend/gui.json` (generated runtime file).
 Every installation/upgrade creates an automatic pre-install backup under:
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v0.1.4\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<timestamp>-v0.1.5\
   manifest.json
   codex\config.toml        (if present at install time)
   codex\.env               (if present)
@@ -171,8 +171,8 @@ The original failure has not been reproduced on the development host or the
 second test machine, and no captured request is available. Versions recorded on
 the development machine are in [`docs/environment.md`](docs/environment.md); the
 checklist for a future observed case is in [`docs/reproduce.md`](docs/reproduce.md).
-The 0.1.4 install/cleanup verification record is in
-[`docs/verification-0.1.4.md`](docs/verification-0.1.4.md).
+The 0.1.5 install/cleanup verification record is in
+[`docs/verification-0.1.5.md`](docs/verification-0.1.5.md).
 Do not attach `.codex` auth/state or API keys to an issue.
 
 ## Egress modes
@@ -190,28 +190,38 @@ how the fix proxy reaches the provider:
   upstream proxy accepts the connection but the provider returns an HTTP error,
   it does **not** retry direct.
 
-## Provider profiles
+## Provider profiles (Desktop overlay)
 
-When switching a provider, the CLI first looks for a matching
-`[profiles.<name>]` whose `model_provider` is that provider (or a profile named
-after it). If exactly one matches, it sets the top-level `profile = "<name>"`.
-The profile is left untouched, so `model`, `model_reasoning_effort`,
-`approval_policy`, `approvals_reviewer`, `sandbox_mode`, and
-`model_catalog_json` stay provider-specific.
+Codex 0.134+ removed the legacy top-level `profile = "<name>"` selector and
+`[profiles.<name>]` tables. Profiles are now separate files:
 
-For built-in OpenAI, use an explicit profile:
+```text
+~/.codex/<name>.config.toml
+```
+
+The CLI selects one with `codex --profile <name>`. Codex Desktop has no profile
+selector, so this tool reads `<provider>.config.toml` and overlays its managed
+keys (`model`, `model_provider`, model reasoning/verbosity, catalog, approval,
+approvals reviewer, review model, sandbox) into the top-level `config.toml`.
+It never writes the legacy `profile` key.
+
+On the first switch it snapshots the current top-level settings into
+`<current-provider>.config.toml` (once; never overwritten). If the target has no
+profile, it clears `model` and `model_catalog_json` instead of carrying the
+previous provider's values, and prints a warning.
+
+Example profile file (top-level keys, without `[profiles.*]`):
 
 ```toml
-[profiles.openai]
 model_provider = "openai"
 model = "gpt-5.6-sol"
 model_catalog_json = "C:\\Users\\you\\.codex\\model-catalogs\\openai.json"
 ```
 
-Do not put `model`, `model_catalog_json`, or approval/sandbox keys inside
-`[model_providers.<id>]`: that table is for transport fields only. If no
-matching profile exists, `provider use` clears the old `profile` and falls back
-to top-level settings with a warning.
+Provider transport settings stay in `config.toml` under
+`[model_providers.<id>]`; do not put `model`, catalog, approval, or sandbox keys
+there. The Desktop overlay is a compatibility bridge; for CLI profile mode, use
+`codex --profile <name>` directly.
 
 ## How it works
 
@@ -408,8 +418,8 @@ Outputs:
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.4.exe
-dist/CodexCallIdFix-0.1.4-portable.zip
+dist/CodexCallIdFix-Setup-0.1.5.exe
+dist/CodexCallIdFix-0.1.5-portable.zip
 dist/SHA256SUMS.txt
 ```
 
@@ -603,7 +613,7 @@ installer).
   it, and use the Start Menu shortcut if the Desktop one was skipped.
 - **"backend/manage.js not found"** — a bare `CodexCallIdFix.exe` cannot run
   without the backend. Use the installer or extract
-  `CodexCallIdFix-0.1.4-portable.zip`; if running from a source checkout, keep
+  `CodexCallIdFix-0.1.5-portable.zip`; if running from a source checkout, keep
   `backend/` next to (or one level above) the EXE and provide Node via
   `runtime/node.exe` or `PATH`.
 - **"Could not create temporary directory"** — the onefile launcher extracts to

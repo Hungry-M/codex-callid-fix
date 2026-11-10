@@ -30,7 +30,7 @@ const tls = require('tls');
 const fs = require('fs');
 const path = require('path');
 
-const VERSION = '0.1.4';
+const VERSION = '0.1.5';
 const TOOL_DIR = __dirname;
 const DATA_DIR = path.resolve(process.env.CALLIDFIX_DATA_DIR || TOOL_DIR);
 const CONFIG_FILE = path.join(DATA_DIR, 'callidfix.config.json');
