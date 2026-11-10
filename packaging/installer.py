@@ -756,17 +756,24 @@ class InstallerApp:
     def _build(self) -> None:
         header = ttk.Frame(self.root, padding=(22, 18, 22, 4))
         header.pack(fill="x")
-        ttk.Label(header, text=f"{APP_NAME}", font=("Segoe UI", 20, "bold")).pack(
-            anchor="w"
-        )
+        header.columnconfigure(0, weight=1)
+        header.columnconfigure(1, weight=0)
+
+        title_frame = ttk.Frame(header)
+        title_frame.grid(row=0, column=0, sticky="nw")
         ttk.Label(
-            header,
+            title_frame, text=f"{APP_NAME}", font=("Segoe UI", 20, "bold")
+        ).pack(anchor="w")
+        ttk.Label(
+            title_frame,
             text=self.t("subtitle", version=APP_VERSION) + f"  ·  by {AUTHOR}",
             font=("Segoe UI", 9),
+            wraplength=360,
+            justify="left",
         ).pack(anchor="w", pady=(2, 0))
 
         settings_frame = ttk.Frame(header)
-        settings_frame.place(relx=1.0, y=0, anchor="ne")
+        settings_frame.grid(row=0, column=1, sticky="ne", padx=(12, 0))
 
         ttk.Label(settings_frame, text=self.t("language"), font=("Segoe UI", 9)).grid(
             row=0, column=0, sticky="e", padx=(0, 6)
