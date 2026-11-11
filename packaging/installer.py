@@ -13,7 +13,7 @@ The installer:
   * optionally deletes itself after a successful install
 
 Silent mode (used by the build tests):
-  CodexCallIdFix-Setup-0.1.5.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
+  CodexCallIdFix-Setup-0.1.6.exe --silent --dir <dir> --no-shortcuts --no-registry --no-launch --keep-installer
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ except Exception:  # pragma: no cover - only on Windows
     winreg = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.5"
+APP_VERSION = "0.1.6"
 AUTHOR = "Hungry-M"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 UNINSTALL_KEY = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\CodexCallIdFix"

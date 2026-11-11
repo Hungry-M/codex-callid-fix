@@ -31,7 +31,7 @@ const http = require('http');
 const crypto = require('crypto');
 const { spawn, spawnSync } = require('child_process');
 
-const VERSION = '0.1.5';
+const VERSION = '0.1.6';
 const TOOL_DIR = __dirname;
 const DATA_DIR = path.resolve(process.env.CALLIDFIX_DATA_DIR || TOOL_DIR);
 const CONFIG_FILE = path.join(DATA_DIR, 'callidfix.config.json');

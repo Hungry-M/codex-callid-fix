@@ -12,7 +12,7 @@ Codex 有时会把子线程的 app 工具委派（`create_thread` / `send_messag
 
 工具不绑定具体厂商：`config.toml` 里任意 `[model_providers.*]` 都可以接入；监听端口和上游代理端口都是配置项，不写死。
 
-> **状态：0.1.5 实验性兼容 shim。** 原始故障在两台可用测试机上都未复现，也没有抓到请求样本。不要把本项目当成已确认的 Codex 修复；请结合 `backend/server.log` 里的 `rewrote=` 和你的 provider/版本验证。
+> **状态：0.1.6 兼容 shim。** 2026-11-11 在原 provider 恢复额度后复现了原始故障；开启修复代理后问题消失。这是该环境下的已确认 workaround，不是通用的 Codex 修复；请结合 `backend/server.log` 里的 `rewrote=` 和你的 provider/版本验证。
 >
 > 本项目是独立项目，与 OpenAI 没有隶属或背书关系。
 
@@ -38,12 +38,12 @@ Codex 有时会把子线程的 app 工具委派（`create_thread` / `send_messag
 下载并运行：
 
 ```text
-CodexCallIdFix-Setup-0.1.5.exe
+CodexCallIdFix-Setup-0.1.6.exe
 ```
 
 安装到当前用户目录 `%LOCALAPPDATA%\Programs\CodexCallIdFix`，不需要管理员权限；安装包自带 Node 运行时、README、LICENSE、AUTHORS 和本地签名工具。安装后会运行自检，通过后自动删除安装包。
 
-不想安装时，可以解压 `CodexCallIdFix-0.1.5-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
+不想安装时，可以解压 `CodexCallIdFix-0.1.6-portable.zip`，运行里面的 `CodexCallIdFix.exe`。便携包包含 `backend/`、`runtime/node.exe`、文档和签名工具。单独一个 `CodexCallIdFix.exe` 不是完整发行包：它需要同级或上一级目录有 `backend/`，并且有可用的 Node（便携 `runtime/node.exe` 或 PATH 里的 `node`）。
 
 安装完成后：
 
@@ -73,7 +73,7 @@ CodexCallIdFix-Setup-0.1.5.exe
 每次安装/升级都会在复制新文件前自动创建备份：
 
 ```text
-%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v0.1.5\
+%LOCALAPPDATA%\CodexCallIdFix\backups\<时间戳>-v0.1.6\
   manifest.json
   codex\config.toml        （安装时存在才复制）
   codex\.env               （安装时存在才复制）
@@ -119,7 +119,7 @@ cleanup.cmd -Yes -RemoveRoot
 
 ## 在另一台电脑上测试
 
-原始故障在开发机和第二台测试机上都未复现，也没有抓到请求样本。开发机的 Codex Desktop、Codex CLI、Windows、Node、Python 版本记录在 [`docs/environment.md`](docs/environment.md)。未来如果观察到案例，按 [`docs/reproduce.md`](docs/reproduce.md) 记录；不要把 `.codex` 的认证/状态文件或 API key 上传到 issue。
+2026-11-11 在原 provider 恢复额度后复现了原始故障，开启修复代理后解决。版本记录见 [`docs/environment.md`](docs/environment.md)，复现记录方法见 [`docs/reproduce.md`](docs/reproduce.md)，验证记录见 [`docs/verification-0.1.6.md`](docs/verification-0.1.6.md)。不要把 `.codex` 的认证/状态文件或 API key 上传到 issue。
 
 ## 出站方式
 
@@ -341,7 +341,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build.ps1
 
 ```text
 dist/CodexCallIdFix.exe
-dist/CodexCallIdFix-Setup-0.1.5.exe
+dist/CodexCallIdFix-Setup-0.1.6.exe
 dist/SHA256SUMS.txt
 ```
 
@@ -413,7 +413,7 @@ stop.cmd                 CLI 快捷方式（off）
 - **`EPERM ... config.toml...tmp`**：当前进程运行在受限令牌下（例如 Codex 的 Windows 沙箱），对 `~/.codex` 只有读权限。请从开始菜单或资源管理器启动 GUI，不要从 Codex 终端启动；`manage.js provider use` 同理。
 - **在 Codex 沙箱外运行**：从受限 Codex 终端写 `~/.codex` 可能被拒绝；用 GUI 或普通 PowerShell。
 - **安装器提示快捷方式/卸载注册表失败**：某些加固环境会拒绝未签名 EXE 写注册表或快捷方式。应用仍会安装并自检；用安装目录的 `uninstall.cmd` 卸载，桌面快捷方式没创建时用开始菜单快捷方式。
-- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-0.1.5-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
+- **“backend/manage.js not found”**：单独一个 `CodexCallIdFix.exe` 没有后端。请用安装包，或解压 `CodexCallIdFix-0.1.6-portable.zip`；从源码目录运行时，把 `backend/` 放在 EXE 同级或上一级，并提供 `runtime/node.exe` 或 PATH 中的 Node。
 - **“Could not create temporary directory”**：onefile 启动器解压到用户临时目录，不会在 EXE 旁创建 `_MEI` 文件夹。请确认 `%TEMP%` 可写，且没有被重定向到只读位置。
 - **自签名报 `NTE_PERM` / `0x80090010`**：当前进程在 Codex 沙箱令牌下，对 `%APPDATA%\Microsoft\Crypto\Keys` 只有读权限，无法创建证书私钥。请从开始菜单或资源管理器启动，不要从 Codex/DSH 终端启动；不要给沙箱组写 Crypto ACL。
 - **Codex 显示 `openai -- (missing section)`**：`config.toml` 设置了 `model_provider = "openai"`，但没有对应的 `[model_providers.openai]` 段。删除这一行可使用内置 OpenAI provider，或补上显式段；这是 provider 标签/配置问题，和 `auth.json` 认证是两回事。

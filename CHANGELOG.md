@@ -3,6 +3,15 @@
 All notable changes are documented here. This project is pre-1.0; behavior may
 change between 0.1.x releases.
 
+## 0.1.6 — 2026-11-11
+
+- Fix the settings dialog note wrapping: use an explicit sentence break, wider
+  wrap length, and a wider dialog so “English 界面” is not split at the wrong
+  point.
+- Record the 2026-11-11 reproduction: with the original provider and restored
+  quota, the missing-`call_id` failure was observed and enabling the fix proxy
+  resolved it.
+
 ## 0.1.5 — 2026-11-11
 
 - Adapt to Codex 0.134+ profile removal: stop writing the legacy

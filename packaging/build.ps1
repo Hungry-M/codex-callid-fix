@@ -4,7 +4,7 @@ Set-Location $root
 
 $python = (Get-Command python).Source
 $node = (Get-Command node).Source
-$version = '0.1.5'
+$version = '0.1.6'
 $stage = Join-Path $PSScriptRoot 'stage'
 $dist = Join-Path $root 'dist'
 

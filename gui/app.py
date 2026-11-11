@@ -42,7 +42,7 @@ except Exception:  # pragma: no cover - optional dependency
     sv_ttk = None
 
 APP_NAME = "Codex Call ID Fix"
-APP_VERSION = "0.1.5"
+APP_VERSION = "0.1.6"
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 CREATE_NEW_CONSOLE = 0x00000010 if os.name == "nt" else 0
 
@@ -87,7 +87,7 @@ STRINGS = {
         "settings_font_zh": "中文字体",
         "settings_font_en": "英文字体",
         "settings_font_size": "字号",
-        "settings_note": "中文界面使用中文字体，English 界面使用英文字体；切换语言后界面会重新加载。外观设置只影响本工具。",
+        "settings_note": "中文界面使用中文字体，English 界面使用英文字体；\n切换语言后界面会重新加载。外观设置只影响本工具。",
         "save": "保存",
         "cancel": "取消",
         "about_title": "关于",
@@ -200,7 +200,7 @@ STRINGS = {
         "settings_font_zh": "中文字型",
         "settings_font_en": "英文字型",
         "settings_font_size": "字型大小",
-        "settings_note": "中文介面使用中文字型，English 介面使用英文字型；切換語言後介面會重新載入。外觀設定只影響本工具。",
+        "settings_note": "中文介面使用中文字型，English 介面使用英文字型；\n切換語言後介面會重新載入。外觀設定只影響本工具。",
         "save": "儲存",
         "cancel": "取消",
         "about_title": "關於",
@@ -313,7 +313,7 @@ STRINGS = {
         "settings_font_zh": "Chinese font",
         "settings_font_en": "English font",
         "settings_font_size": "Font size",
-        "settings_note": "The Chinese UI uses the Chinese font; the English UI uses the English font. Changing the language reloads the UI. Appearance only affects this tool.",
+        "settings_note": "The Chinese UI uses the Chinese font; the English UI uses the English font.\nChanging the language reloads the UI. Appearance only affects this tool.",
         "save": "Save",
         "cancel": "Cancel",
         "about_title": "About",
@@ -1589,7 +1589,7 @@ class SettingsDialog:
         self.window.title(app.t("settings_title"))
         self.window.transient(app.root)
         self.window.resizable(False, False)
-        self.window.geometry("620x420")
+        self.window.geometry("640x430")
         try:
             self.window.grab_set()
         except Exception:
@@ -1672,7 +1672,8 @@ class SettingsDialog:
         ttk.Label(
             frame,
             text=app.t("settings_note"),
-            wraplength=500,
+            wraplength=560,
+            justify="left",
         ).grid(row=5, column=0, columnspan=2, sticky="w", pady=(10, 8))
 
         buttons = ttk.Frame(frame)
